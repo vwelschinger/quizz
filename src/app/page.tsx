@@ -5,6 +5,8 @@ import { getUserStats, getRecentEloTrend, getCurrentStreak, getDailyStreak } fro
 import { countQuestions } from '@/lib/db/questions';
 import { countPendingBattlesForUser, getBattleStatsForUser } from '@/lib/db/battles';
 import { getUserRank } from '@/lib/db/leaderboard';
+import { countUserBadges } from '@/lib/badges/engine';
+import { BADGE_COUNT } from '@/lib/badges/catalog';
 import { playerTier } from '@/lib/quiz/tier';
 import EmojiAvatar from './EmojiAvatar';
 import LogoutButton from './LogoutButton';
@@ -45,7 +47,7 @@ export default async function DashboardPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
 
-  const [stats, trend, streak, totalQuestions, pendingBattles, rank, battleStats, dailyStreak] =
+  const [stats, trend, streak, totalQuestions, pendingBattles, rank, battleStats, dailyStreak, badgeCount] =
     await Promise.all([
       getUserStats(user.id),
       getRecentEloTrend(user.id),
@@ -55,6 +57,7 @@ export default async function DashboardPage() {
       getUserRank(user.elo),
       getBattleStatsForUser(user.id),
       getDailyStreak(user.id),
+      countUserBadges(user.id),
     ]);
   const tier = playerTier(user.elo);
 
@@ -175,11 +178,9 @@ export default async function DashboardPage() {
           className="border-[3px] border-ink bg-ink px-[12px] pb-[10px] pt-[9px] shadow-hard-blue"
         >
           <GeoMark shape="star" color="#1E6499" size={13} />
-          <div className="mt-[7px] flex h-[24px] items-center text-cream">
-            <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <circle cx="12" cy="8" r="6" />
-              <path d="M8.5 13.5L7 22l5-3 5 3-1.5-8.5" />
-            </svg>
+          <div className="mt-[7px] font-disp text-[26px] leading-[0.9] tracking-disp text-cream">
+            {badgeCount}
+            <span className="text-[15px] text-[#9aa1a8]">/{BADGE_COUNT}</span>
           </div>
           <div className="mt-[5px] text-[10.5px] font-bold uppercase leading-[1.15] tracking-[0.03em] text-ink-3">
             Badges

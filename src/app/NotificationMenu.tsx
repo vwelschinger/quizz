@@ -19,6 +19,7 @@ const TITLES: Record<string, string> = {
   battle_challenge: '⚔️ Défi en bataille',
   battle_finished: '⚔️ Bataille terminée',
   battle_recomputed: '↻ Bataille recalculée',
+  badge_unlocked: '🏅 Badge débloqué',
 };
 
 function fmtTime(iso: string): string {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getCurrentUser } from '@/lib/auth/session';
 import { submitAnswer, getUserStats } from '@/lib/db/answers';
+import { checkAndAwardBadges } from '@/lib/badges/engine';
 
 const schema = z.object({
   questionId: z.number().int().positive(),
@@ -22,6 +23,8 @@ export async function POST(req: Request) {
   if (!result) {
     return NextResponse.json({ error: 'Question introuvable' }, { status: 404 });
   }
+
+  await checkAndAwardBadges(user.id);
 
   const stats = await getUserStats(user.id);
   return NextResponse.json({ result, stats });
