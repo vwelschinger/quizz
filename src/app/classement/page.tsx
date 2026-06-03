@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth/session';
 import { getLeaderboard } from '@/lib/db/leaderboard';
+import ChallengeButton from './ChallengeButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,13 +58,14 @@ export default async function LeaderboardPage() {
                     me ? 'text-ink-3' : 'text-ink-2'
                   }`}
                 >
-                  {r.answered} questions · {r.successRate}% réussite
+                  {r.answered} questions · {r.successRate}% · 🏅 {r.badges}
                 </div>
               </div>
               <div className="shrink-0 text-right">
                 <div className="font-disp text-[22px] leading-none tracking-disp">{r.elo}</div>
                 <div className="text-[9px] font-extrabold uppercase tracking-[0.1em] text-ink-3">ELO</div>
               </div>
+              {!me && <ChallengeButton opponent={r.username} />}
             </div>
           );
         })}

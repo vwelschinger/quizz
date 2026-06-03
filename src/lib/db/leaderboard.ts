@@ -6,16 +6,18 @@ export interface LeaderboardEntry {
   elo: number;
   answered: number;
   successRate: number; // %
+  badges: number; // nombre de badges débloqués
 }
 
-/** Classement des joueurs (role user) par ELO décroissant, avec volume et % de réussite. */
+/** Classement des joueurs (role user) par ELO décroissant, avec volume, % de réussite et badges. */
 export function getLeaderboard(limit = 100): Promise<LeaderboardEntry[]> {
   return query<LeaderboardEntry>(
     `SELECT u.id,
             u.username,
             u.elo,
             count(a.id)::int AS answered,
-            coalesce(round(avg(CASE WHEN a.is_correct THEN 100.0 ELSE 0 END)), 0)::int AS "successRate"
+            coalesce(round(avg(CASE WHEN a.is_correct THEN 100.0 ELSE 0 END)), 0)::int AS "successRate",
+            (SELECT count(*) FROM user_badges ub WHERE ub.user_id = u.id)::int AS badges
      FROM users u
      LEFT JOIN answers a ON a.user_id = u.id
      WHERE u.role = 'user'
