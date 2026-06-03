@@ -156,3 +156,28 @@ export async function getCurrentStreak(userId: number): Promise<number> {
   }
   return streak;
 }
+
+export interface EloHistoryRow {
+  questionId: number;
+  prompt: string;
+  questionElo: number;
+  eloBefore: number;
+  eloAfter: number;
+  eloDelta: number;
+  isCorrect: boolean;
+}
+
+/** Historique ELO du joueur, par ordre chronologique (pour le graphe + la liste des stats). */
+export function getEloHistory(userId: number): Promise<EloHistoryRow[]> {
+  return query<EloHistoryRow>(
+    `SELECT a.question_id AS "questionId", q.prompt,
+            a.question_elo AS "questionElo", a.elo_before AS "eloBefore",
+            a.elo_after AS "eloAfter", a.elo_delta AS "eloDelta",
+            a.is_correct AS "isCorrect"
+     FROM answers a
+     JOIN questions q ON q.id = a.question_id
+     WHERE a.user_id = $1
+     ORDER BY a.answered_at ASC`,
+    [userId],
+  );
+}

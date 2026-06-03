@@ -233,6 +233,17 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
+      <Link
+        href="/stats"
+        className="mt-3 flex h-[52px] items-center justify-center gap-2 border-[3px] border-ink bg-card font-disp text-[15px] uppercase tracking-disp shadow-hard"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M3 3v18h18" />
+          <path d="M7 13l3.5-3.5 3 3L19 6" />
+        </svg>
+        Mes stats
+      </Link>
+
       {totalQuestions === 0 && (
         <p className="mt-3 text-center text-[12px] font-semibold text-brand-deep">
           Aucune question en base — lance une synchro depuis la console admin.
