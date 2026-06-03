@@ -1,0 +1,24 @@
+# Extrait à fusionner dans ~/stack/docker-compose.yml (service "quizz").
+# Postgres est partagé avec la plateforme DECP : on réutilise POSTGRES_USER/PASSWORD
+# du .env existant, sur la base dédiée "quizz". AUCUN "ports:" — exposition via Caddy.
+services:
+  quizz:
+    build: ./revorun-quizz
+    container_name: quizz
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/quizz
+      - SESSION_SECRET=${QUIZZ_SESSION_SECRET}
+      - ADMIN_USERNAME=${QUIZZ_ADMIN_USERNAME}
+      - ADMIN_PASSWORD=${QUIZZ_ADMIN_PASSWORD}
+      - LTDS_API_BASE_URL=${LTDS_API_BASE_URL}
+      - LTDS_API_TOKEN=${LTDS_API_TOKEN}
+      - LTDS_START_DAY=${LTDS_START_DAY}
+      - LTDS_MAX_DAYS_PER_SYNC=${LTDS_MAX_DAYS_PER_SYNC}
+      - TZ=${TZ}
+      - SYNC_CRON=0 6 * * *
+      - SYNC_SCHEDULER_ENABLED=true
+    depends_on: [postgres]
+    networks: [stack]
+    # PAS de "ports:" — interne au réseau "stack", publié uniquement par Caddy.

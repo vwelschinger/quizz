@@ -1,0 +1,6 @@
+# À ajouter au ~/stack/Caddyfile
+quizz.revorun.eu {
+    import security_headers
+    reverse_proxy quizz:3000
+    encode gzip
+}

@@ -1,0 +1,27 @@
+# dependencies
+/node_modules
+
+# next.js
+/.next
+/out
+next-env.d.ts
+
+# production
+/build
+
+# env (NE JAMAIS commiter les secrets ; garder .env.example)
+.env
+.env.local
+.env.*.local
+
+# données / volumes locaux
+/data
+
+# logs
+*.log
+npm-debug.log*
+
+# divers
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
