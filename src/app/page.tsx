@@ -8,6 +8,7 @@ import { getUserRank } from '@/lib/db/leaderboard';
 import { playerTier } from '@/lib/quiz/tier';
 import EmojiAvatar from './EmojiAvatar';
 import LogoutButton from './LogoutButton';
+import NotificationBanner from './NotificationBanner';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,6 +59,7 @@ export default async function DashboardPage() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[440px] flex-col px-[18px] pb-[42px] pt-[60px]">
+      <NotificationBanner />
       {/* ── Header ── */}
       <header className="mb-6 flex items-start justify-between">
         <div className="relative">

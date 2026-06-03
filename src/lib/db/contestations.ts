@@ -79,67 +79,74 @@ export async function resolveContestation(
     const c = cRes.rows[0];
     if (!c || c.status !== 'pending') return false;
 
-    if (!accept) {
-      await client.query(
-        "UPDATE contestations SET status = 'rejected', resolved_at = now(), resolved_by = $1 WHERE id = $2",
-        [adminId, id],
-      );
-      return true;
-    }
-
     const qRes = await client.query<{
+      prompt: string;
       accepted_answers: unknown;
       correct_answer: string;
       community_success_rate: string | null;
     }>(
-      'SELECT accepted_answers, correct_answer, community_success_rate FROM questions WHERE id = $1',
+      'SELECT prompt, accepted_answers, correct_answer, community_success_rate FROM questions WHERE id = $1',
       [c.question_id],
     );
     const q = qRes.rows[0];
+    const prompt = q?.prompt ?? null;
+    let eloDelta = 0; // évolution d'ELO recréditée au joueur (0 si refus / déjà juste)
 
-    if (q) {
-      // 1) ajouter la réponse contestée aux variantes acceptées
-      const accepted: string[] = Array.isArray(q.accepted_answers)
-        ? (q.accepted_answers as string[])
-        : q.correct_answer
-          ? [q.correct_answer]
-          : [];
-      if (!accepted.some((a) => norm(a) === norm(c.chosen_answer))) {
-        accepted.push(c.chosen_answer);
-        await client.query(
-          'UPDATE questions SET accepted_answers = $1::jsonb, updated_at = now() WHERE id = $2',
-          [JSON.stringify(accepted), c.question_id],
+    if (accept) {
+      if (q) {
+        // 1) ajouter la réponse contestée aux variantes acceptées
+        const accepted: string[] = Array.isArray(q.accepted_answers)
+          ? (q.accepted_answers as string[])
+          : q.correct_answer
+            ? [q.correct_answer]
+            : [];
+        if (!accepted.some((a) => norm(a) === norm(c.chosen_answer))) {
+          accepted.push(c.chosen_answer);
+          await client.query(
+            'UPDATE questions SET accepted_answers = $1::jsonb, updated_at = now() WHERE id = $2',
+            [JSON.stringify(accepted), c.question_id],
+          );
+        }
+
+        // 2) recréditer le joueur (sa réponse passe de faux à juste)
+        const aRes = await client.query<{
+          id: string;
+          is_correct: boolean;
+          elo_before: number;
+          elo_delta: number;
+          question_elo: number;
+        }>(
+          'SELECT id, is_correct, elo_before, elo_delta, question_elo FROM answers WHERE user_id = $1 AND question_id = $2 FOR UPDATE',
+          [c.user_id, c.question_id],
         );
+        const a = aRes.rows[0];
+        if (a && !a.is_correct) {
+          const rate = q.community_success_rate == null ? 0 : Number(q.community_success_rate);
+          const correctDelta = updatePlayerElo(a.elo_before, a.question_elo, true).delta;
+          eloDelta = correctDelta - a.elo_delta;
+          const bonus = bonusPoints(rate, true);
+          await client.query(
+            'UPDATE answers SET is_correct = true, elo_delta = $1, elo_after = $2, bonus_points = $3 WHERE id = $4',
+            [correctDelta, a.elo_before + correctDelta, bonus, a.id],
+          );
+          await client.query('UPDATE users SET elo = elo + $1 WHERE id = $2', [eloDelta, c.user_id]);
+        }
       }
-
-      // 2) recréditer le joueur (sa réponse passe de faux à juste)
-      const aRes = await client.query<{
-        id: string;
-        is_correct: boolean;
-        elo_before: number;
-        elo_delta: number;
-        question_elo: number;
-      }>(
-        'SELECT id, is_correct, elo_before, elo_delta, question_elo FROM answers WHERE user_id = $1 AND question_id = $2 FOR UPDATE',
-        [c.user_id, c.question_id],
+      await client.query(
+        "UPDATE contestations SET status = 'accepted', resolved_at = now(), resolved_by = $1 WHERE id = $2",
+        [adminId, id],
       );
-      const a = aRes.rows[0];
-      if (a && !a.is_correct) {
-        const rate = q.community_success_rate == null ? 0 : Number(q.community_success_rate);
-        const correctDelta = updatePlayerElo(a.elo_before, a.question_elo, true).delta;
-        const adjustment = correctDelta - a.elo_delta;
-        const bonus = bonusPoints(rate, true);
-        await client.query(
-          'UPDATE answers SET is_correct = true, elo_delta = $1, elo_after = $2, bonus_points = $3 WHERE id = $4',
-          [correctDelta, a.elo_before + correctDelta, bonus, a.id],
-        );
-        await client.query('UPDATE users SET elo = elo + $1 WHERE id = $2', [adjustment, c.user_id]);
-      }
+    } else {
+      await client.query(
+        "UPDATE contestations SET status = 'rejected', resolved_at = now(), resolved_by = $1 WHERE id = $2",
+        [adminId, id],
+      );
     }
 
+    // notification au joueur (acceptée ou refusée), avec l'évolution d'ELO
     await client.query(
-      "UPDATE contestations SET status = 'accepted', resolved_at = now(), resolved_by = $1 WHERE id = $2",
-      [adminId, id],
+      'INSERT INTO notifications (user_id, kind, prompt, elo_delta) VALUES ($1, $2, $3, $4)',
+      [c.user_id, accept ? 'contest_accepted' : 'contest_rejected', prompt, eloDelta],
     );
     return true;
   });
