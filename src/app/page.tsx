@@ -158,11 +158,23 @@ export default async function DashboardPage() {
 
         <div className="card-hard px-[14px] pb-[14px] pt-[13px]">
           <GeoMark shape="ring" color="#1E6499" />
-          <div className="mt-[10px] font-disp text-[34px] leading-[0.9] tracking-disp">#{rank.rank}</div>
-          <div className="mt-[7px] text-[11.5px] font-bold uppercase leading-[1.2] tracking-[0.04em] text-ink-2">
-            Classement
-          </div>
-          <div className="mt-1 text-[11px] font-semibold text-ink-3">sur {rank.total} joueurs</div>
+          {user.role === 'admin' ? (
+            <>
+              <div className="mt-[10px] font-disp text-[34px] leading-[0.9] tracking-disp">—</div>
+              <div className="mt-[7px] text-[11.5px] font-bold uppercase leading-[1.2] tracking-[0.04em] text-ink-2">
+                Classement
+              </div>
+              <div className="mt-1 text-[11px] font-semibold text-ink-3">Admin (hors classement)</div>
+            </>
+          ) : (
+            <>
+              <div className="mt-[10px] font-disp text-[34px] leading-[0.9] tracking-disp">#{rank.rank}</div>
+              <div className="mt-[7px] text-[11.5px] font-bold uppercase leading-[1.2] tracking-[0.04em] text-ink-2">
+                Classement
+              </div>
+              <div className="mt-1 text-[11px] font-semibold text-ink-3">sur {rank.total} joueurs</div>
+            </>
+          )}
         </div>
 
         <div className="card-hard px-[14px] pb-[14px] pt-[13px]">
