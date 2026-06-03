@@ -17,10 +17,10 @@ export function listUsers(): Promise<UserSummary[]> {
   );
 }
 
-/** Adversaires possibles (joueurs, hors soi-même) pour le mode bataille. */
+/** Adversaires possibles (tous les comptes hors soi-même, admins inclus) pour le mode bataille. */
 export function listOpponents(excludeUserId: number): Promise<{ id: number; username: string }[]> {
   return query<{ id: number; username: string }>(
-    "SELECT id, username FROM users WHERE role = 'user' AND id <> $1 ORDER BY username ASC",
+    'SELECT id, username FROM users WHERE id <> $1 ORDER BY username ASC',
     [excludeUserId],
   );
 }

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth/session';
 import { getBattleView } from '@/lib/db/battles';
 import BattlePlay from './BattlePlay';
+import BattleReview from '../BattleReview';
 
 export const dynamic = 'force-dynamic';
 
@@ -78,6 +79,7 @@ export default async function BattleDetailPage({ params }: { params: Promise<{ i
           ELO {view.eloDelta >= 0 ? `+${view.eloDelta}` : view.eloDelta}
         </div>
       </div>
+      <BattleReview review={view.review} opponentName={view.opponentName} />
       <Link href="/bataille" className="cta-primary mt-5">
         Retour aux batailles
       </Link>

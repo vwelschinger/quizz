@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import BattleReview from '../BattleReview';
+import type { BattleQuestionReview } from '@/lib/db/battles';
 
 interface PublicQuestion {
   id: number;
@@ -22,6 +24,7 @@ interface PlayResult {
   eloDelta?: number;
   opponentScore?: number;
   opponentName?: string;
+  review?: BattleQuestionReview[];
 }
 
 function Frame({ children }: { children: React.ReactNode }) {
@@ -116,6 +119,10 @@ export default function BattlePlay({
               ELO {delta >= 0 ? `+${delta}` : delta}
             </div>
           </div>
+          <BattleReview
+            review={result.review ?? []}
+            opponentName={result.opponentName ?? opponentName}
+          />
           <Link href="/bataille" className="cta-primary mt-5">
             Retour aux batailles
           </Link>

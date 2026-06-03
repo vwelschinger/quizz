@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth/session';
 import { getUserStats, getRecentEloTrend, getCurrentStreak } from '@/lib/db/answers';
 import { countQuestions } from '@/lib/db/questions';
+import { countPendingBattlesForUser } from '@/lib/db/battles';
 import { playerTier } from '@/lib/quiz/tier';
 import EmojiAvatar from './EmojiAvatar';
 import LogoutButton from './LogoutButton';
@@ -42,11 +43,12 @@ export default async function DashboardPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
 
-  const [stats, trend, streak, totalQuestions] = await Promise.all([
+  const [stats, trend, streak, totalQuestions, pendingBattles] = await Promise.all([
     getUserStats(user.id),
     getRecentEloTrend(user.id),
     getCurrentStreak(user.id),
     countQuestions(),
+    countPendingBattlesForUser(user.id),
   ]);
   const tier = playerTier(user.elo);
 
@@ -173,12 +175,17 @@ export default async function DashboardPage() {
         </Link>
         <Link
           href="/bataille"
-          className="flex h-[52px] items-center justify-center gap-2 border-[3px] border-ink bg-card font-disp text-[15px] uppercase tracking-disp shadow-hard"
+          className="relative flex h-[52px] items-center justify-center gap-2 border-[3px] border-ink bg-card font-disp text-[15px] uppercase tracking-disp shadow-hard"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
             <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" />
           </svg>
           Bataille
+          {pendingBattles > 0 && (
+            <span className="absolute -right-2 -top-2 flex h-6 min-w-[24px] items-center justify-center rounded-full border-2 border-paper bg-fail px-1 font-sans text-[12px] font-bold leading-none text-white">
+              {pendingBattles}
+            </span>
+          )}
         </Link>
       </div>
 

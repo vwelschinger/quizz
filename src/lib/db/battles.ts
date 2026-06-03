@@ -248,6 +248,73 @@ export async function listBattlesForUser(userId: number): Promise<BattleSummary[
   });
 }
 
+/** Nombre de batailles où c'est au tour de l'utilisateur de jouer (notif). */
+export async function countPendingBattlesForUser(userId: number): Promise<number> {
+  const row = await queryOne<{ count: number }>(
+    `SELECT count(*)::int AS count FROM battles
+     WHERE status = 'waiting'
+       AND ((challenger_id = $1 AND challenger_score IS NULL)
+         OR (opponent_id = $1 AND opponent_score IS NULL))`,
+    [userId],
+  );
+  return row?.count ?? 0;
+}
+
+export interface BattleQuestionReview {
+  prompt: string;
+  correctAnswer: string;
+  myAnswer: string | null;
+  myCorrect: boolean | null;
+  opponentAnswer: string | null;
+  opponentCorrect: boolean | null;
+}
+
+/** Détail par question d'une bataille : réponses des deux joueurs + bonne réponse. */
+export async function getBattleReview(
+  battleId: number,
+  userId: number,
+): Promise<BattleQuestionReview[]> {
+  const b = await queryOne<{ challenger_id: number; opponent_id: number; question_ids: unknown }>(
+    'SELECT challenger_id, opponent_id, question_ids FROM battles WHERE id = $1',
+    [battleId],
+  );
+  if (!b) return [];
+  const ids = Array.isArray(b.question_ids) ? (b.question_ids as number[]) : [];
+  if (ids.length === 0) return [];
+  const opponentId = b.challenger_id === userId ? b.opponent_id : b.challenger_id;
+
+  const questions = await query<{ id: number; prompt: string; correct_answer: string }>(
+    'SELECT id, prompt, correct_answer FROM questions WHERE id = ANY($1::int[])',
+    [ids],
+  );
+  const qById = new Map(questions.map((q) => [q.id, q]));
+
+  const answers = await query<{
+    user_id: number;
+    question_id: number;
+    is_correct: boolean;
+    chosen_answer: string | null;
+  }>('SELECT user_id, question_id, is_correct, chosen_answer FROM battle_answers WHERE battle_id = $1', [
+    battleId,
+  ]);
+  const k = (u: number, q: number) => `${u}:${q}`;
+  const aByKey = new Map(answers.map((a) => [k(a.user_id, a.question_id), a]));
+
+  return ids.map((qid) => {
+    const q = qById.get(qid);
+    const mine = aByKey.get(k(userId, qid));
+    const opp = aByKey.get(k(opponentId, qid));
+    return {
+      prompt: q?.prompt ?? '',
+      correctAnswer: q?.correct_answer ?? '',
+      myAnswer: mine?.chosen_answer ?? null,
+      myCorrect: mine ? mine.is_correct : null,
+      opponentAnswer: opp?.chosen_answer ?? null,
+      opponentCorrect: opp ? opp.is_correct : null,
+    };
+  });
+}
+
 export type BattleView =
   | { state: 'play'; battleId: number; opponentName: string; questions: PublicQuestion[]; total: number }
   | { state: 'waiting'; opponentName: string; myScore: number; total: number; opponentPlayed: boolean }
@@ -258,6 +325,7 @@ export type BattleView =
       opponentScore: number;
       outcome: 'win' | 'loss' | 'draw';
       eloDelta: number;
+      review: BattleQuestionReview[];
     }
   | { state: 'notfound' }
   | { state: 'forbidden' };
@@ -293,6 +361,7 @@ export async function getBattleView(battleId: number, userId: number): Promise<B
       opponentScore: oppScore ?? 0,
       outcome,
       eloDelta,
+      review: await getBattleReview(b.id, userId),
     };
   }
 
