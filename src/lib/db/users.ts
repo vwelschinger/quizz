@@ -1,5 +1,6 @@
 import { query, queryOne } from './pool';
 import type { Role, UserRow } from './types';
+import { QUIZ_CONFIG } from '@/lib/quiz/config';
 
 export function findUserByUsername(username: string): Promise<UserRow | null> {
   return queryOne<UserRow>('SELECT * FROM users WHERE username = $1', [username]);
@@ -31,8 +32,8 @@ export function createUser(
   role: Role = 'user',
 ): Promise<UserRow | null> {
   return queryOne<UserRow>(
-    'INSERT INTO users (username, password_hash, role) VALUES ($1, $2, $3) RETURNING *',
-    [username, passwordHash, role],
+    'INSERT INTO users (username, password_hash, role, elo) VALUES ($1, $2, $3, $4) RETURNING *',
+    [username, passwordHash, role, QUIZ_CONFIG.startingPlayerElo],
   );
 }
 

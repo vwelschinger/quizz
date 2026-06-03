@@ -5,7 +5,7 @@ export type Difficulty = 'high' | 'middle' | 'low';
 
 export const QUIZ_CONFIG = {
   /** ELO de départ d'un nouveau joueur. */
-  startingPlayerElo: 1200,
+  startingPlayerElo: 800,
 
   /** K-factor ELO : amplitude des variations à chaque réponse. */
   kFactor: 32,
