@@ -248,13 +248,14 @@ export default function AdminConsole() {
           <div className="flex flex-col gap-3">
             {contestations.map((c) => (
               <div key={c.id} className="border border-admin-border p-3">
+                <div className="mb-2 text-[12px] font-bold text-cream">⚑ Demande de {c.username}</div>
                 <div className="text-[13px] text-[#c7bda8]">{c.prompt}</div>
                 <div className="mt-2 text-[12px]">
                   <span className="text-[#79705f]">Bonne réponse :</span>{' '}
                   <span className="text-cream">{c.correctAnswer}</span>
                 </div>
                 <div className="text-[12px]">
-                  <span className="text-[#79705f]">Contestée ({c.username}) :</span>{' '}
+                  <span className="text-[#79705f]">Réponse contestée :</span>{' '}
                   <span className="text-cream">{c.chosenAnswer}</span>
                 </div>
                 <div className="mt-3 flex gap-2">

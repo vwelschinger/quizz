@@ -120,7 +120,7 @@ export default async function DashboardPage() {
       </section>
 
       {/* ── Grille de stats 2×2 ── */}
-      <section className="grid grid-cols-2 gap-[14px]">
+      <section className="grid grid-cols-2 auto-rows-fr gap-[14px]">
         <div className="card-hard px-[14px] pb-[14px] pt-[13px]">
           <GeoMark shape="square" />
           <div className="mt-[10px] font-disp text-[34px] leading-[0.9] tracking-disp">{stats.answered}</div>
