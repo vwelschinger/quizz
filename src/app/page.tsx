@@ -235,7 +235,7 @@ export default async function DashboardPage() {
       <div className="min-h-[20px] flex-1" />
 
       {/* ── CTA ── */}
-      <Link href="/quiz" className="cta-primary">
+      <Link href="/quiz" className="cta-primary cta-next">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
           <path d="M6 4l14 8-14 8V4z" />
         </svg>
@@ -254,7 +254,7 @@ export default async function DashboardPage() {
         </Link>
         <Link
           href="/bataille"
-          className="relative flex h-[52px] items-center justify-center gap-2 border-[3px] border-ink bg-brand text-cream font-disp text-[15px] uppercase tracking-disp shadow-hard"
+          className="relative flex h-[52px] items-center justify-center gap-2 border-[3px] border-ink bg-ink text-cream font-disp text-[15px] uppercase tracking-disp shadow-hard-blue"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
             <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" />

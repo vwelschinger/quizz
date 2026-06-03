@@ -24,8 +24,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Question introuvable' }, { status: 404 });
   }
 
-  await checkAndAwardBadges(user.id);
+  const newBadges = await checkAndAwardBadges(user.id);
 
   const stats = await getUserStats(user.id);
-  return NextResponse.json({ result, stats });
+  return NextResponse.json({
+    result,
+    stats,
+    newBadges: newBadges.map((b) => ({ id: b.id, name: b.name, description: b.description, tier: b.tier })),
+  });
 }

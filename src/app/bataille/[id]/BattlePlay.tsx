@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import BattleReview from '../BattleReview';
+import BadgeCelebration, { type UnlockedBadge } from '../../BadgeCelebration';
 import type { BattleQuestionReview } from '@/lib/db/battles';
 
 interface PublicQuestion {
@@ -59,6 +60,7 @@ export default function BattlePlay({
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<PlayResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [celebration, setCelebration] = useState<UnlockedBadge[]>([]);
 
   const total = questions.length;
   const q = questions[idx];
@@ -78,6 +80,9 @@ export default function BattlePlay({
         return;
       }
       setResult(data);
+      if (Array.isArray(data.newBadges) && data.newBadges.length > 0) {
+        setCelebration(data.newBadges);
+      }
     } catch {
       setError('Erreur réseau');
     } finally {
@@ -101,6 +106,9 @@ export default function BattlePlay({
       const delta = result.eloDelta ?? 0;
       return (
         <Frame>
+          {celebration.length > 0 && (
+            <BadgeCelebration badges={celebration} onClose={() => setCelebration([])} />
+          )}
           <div className="card-hard p-6 text-center">
             <div
               className={`font-disp text-[34px] uppercase tracking-disp ${win ? 'text-success' : draw ? 'text-ink' : 'text-fail'}`}

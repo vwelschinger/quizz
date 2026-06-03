@@ -25,9 +25,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const result = await playBattle(battleId, user.id, parsed.data.answers);
   if ('error' in result) return NextResponse.json(result, { status: 400 });
   if (result.status === 'finished') {
-    await checkAndAwardBadges(user.id);
+    const newBadges = await checkAndAwardBadges(user.id);
     const review = await getBattleReview(battleId, user.id);
-    return NextResponse.json({ ...result, review });
+    return NextResponse.json({
+      ...result,
+      review,
+      newBadges: newBadges.map((b) => ({ id: b.id, name: b.name, description: b.description, tier: b.tier })),
+    });
   }
   return NextResponse.json(result);
 }

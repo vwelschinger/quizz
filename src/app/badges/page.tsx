@@ -57,7 +57,7 @@ export default async function BadgesPage() {
                       {b.name}
                     </div>
                     <div className="mt-[2px] text-[9px] leading-tight text-ink-3">
-                      {has ? 'Débloqué' : b.description}
+                      {b.description}
                     </div>
                   </div>
                 );

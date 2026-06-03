@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import EloFeedback from './EloFeedback';
 import SessionRecap, { type RecapEntry } from './SessionRecap';
+import BadgeCelebration, { type UnlockedBadge } from '../BadgeCelebration';
 
 interface PublicQuestion {
   id: number;
@@ -57,6 +58,7 @@ export default function QuizRunner() {
   const [entries, setEntries] = useState<RecapEntry[]>([]);
   const [message, setMessage] = useState('');
   const [contest, setContest] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [celebration, setCelebration] = useState<UnlockedBadge[]>([]);
 
   const loadNext = useCallback(async (count: number) => {
     if (count >= SESSION_SIZE) {
@@ -120,6 +122,9 @@ export default function QuizRunner() {
       }
       const data = await res.json();
       setResult(data.result);
+      if (Array.isArray(data.newBadges) && data.newBadges.length > 0) {
+        setCelebration(data.newBadges);
+      }
       setPhase('feedback');
     } catch {
       setMessage('Erreur réseau.');
@@ -208,6 +213,9 @@ export default function QuizRunner() {
 
   return (
     <Frame>
+      {celebration.length > 0 && (
+        <BadgeCelebration badges={celebration} onClose={() => setCelebration([])} />
+      )}
       <div className="mb-3">
         <Link href="/" className="text-[12px] font-semibold text-ink-2 underline">
           ← Tableau de bord
