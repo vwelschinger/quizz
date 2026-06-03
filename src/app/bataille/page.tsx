@@ -1,7 +1,12 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth/session';
-import { listBattlesForUser, type BattleSummary } from '@/lib/db/battles';
+import {
+  listBattlesForUser,
+  listAllBattles,
+  type BattleSummary,
+  type AdminBattleRow,
+} from '@/lib/db/battles';
 import { listOpponents } from '@/lib/db/users';
 import CreateBattleForm from './CreateBattleForm';
 import LocalTime from '../LocalTime';
@@ -57,6 +62,25 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+// Vue admin : une bataille du jeu (lecture seule, tous joueurs confondus).
+function AdminBattleItem({ b }: { b: AdminBattleRow }) {
+  return (
+    <div className="border-[3px] border-ink bg-card p-3 shadow-hard">
+      <div className="truncate font-disp text-[16px] uppercase leading-none tracking-disp">
+        {b.challengerName} <span className="text-ink-3">vs</span> {b.opponentName}
+      </div>
+      <div className="mt-1 text-[11px] font-semibold uppercase tracking-[0.04em] text-ink-2">
+        {b.status === 'finished'
+          ? `${b.challengerScore}–${b.opponentScore} · ${b.winnerName ? `Vainqueur ${b.winnerName}` : 'Match nul'}`
+          : 'En cours'}
+      </div>
+      <div className="mt-1 text-[10px] font-medium text-ink-3">
+        <LocalTime iso={b.createdAt} />
+      </div>
+    </div>
+  );
+}
+
 export default async function BattlePage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
@@ -65,6 +89,7 @@ export default async function BattlePage() {
   const toPlay = battles.filter((b) => b.status === 'waiting' && !b.myPlayed);
   const waiting = battles.filter((b) => b.status === 'waiting' && b.myPlayed);
   const finished = battles.filter((b) => b.status === 'finished');
+  const allBattles = user.role === 'admin' ? await listAllBattles() : [];
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[440px] flex-col px-[18px] pb-[42px] pt-[60px]">
@@ -105,6 +130,14 @@ export default async function BattlePage() {
         <p className="mt-6 text-center text-[13px] text-ink-2">
           Aucune bataille. Défie un joueur par son pseudo ci-dessus.
         </p>
+      )}
+
+      {user.role === 'admin' && allBattles.length > 0 && (
+        <Section title={`Toutes les batailles · ${allBattles.length}`}>
+          {allBattles.map((b) => (
+            <AdminBattleItem key={b.id} b={b} />
+          ))}
+        </Section>
       )}
     </main>
   );

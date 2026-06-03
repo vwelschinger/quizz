@@ -421,3 +421,41 @@ export async function getBattleView(battleId: number, userId: number): Promise<B
 
   return { state: 'waiting', opponentName: oppName, myScore, total, opponentPlayed: oppScore != null };
 }
+
+export interface AdminBattleRow {
+  id: number;
+  challengerName: string;
+  opponentName: string;
+  status: 'waiting' | 'finished';
+  challengerScore: number | null;
+  opponentScore: number | null;
+  total: number;
+  winnerName: string | null;
+  createdAt: string;
+}
+
+/** Admin : toutes les batailles du jeu, plus récentes d'abord. */
+export async function listAllBattles(limit = 100): Promise<AdminBattleRow[]> {
+  const rows = await query<BattleRowWithNames & { winner_name: string | null }>(
+    `SELECT b.*, cu.username AS challenger_name, ou.username AS opponent_name,
+            wu.username AS winner_name
+     FROM battles b
+     JOIN users cu ON cu.id = b.challenger_id
+     JOIN users ou ON ou.id = b.opponent_id
+     LEFT JOIN users wu ON wu.id = b.winner_id
+     ORDER BY b.created_at DESC
+     LIMIT $1`,
+    [limit],
+  );
+  return rows.map((b) => ({
+    id: b.id,
+    challengerName: b.challenger_name,
+    opponentName: b.opponent_name,
+    status: b.status,
+    challengerScore: b.challenger_score,
+    opponentScore: b.opponent_score,
+    total: questionIdsOf(b).length,
+    winnerName: b.winner_name,
+    createdAt: b.created_at.toISOString(),
+  }));
+}
