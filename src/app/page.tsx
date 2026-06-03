@@ -149,73 +149,81 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* ── Grille de stats 2×2 ── */}
-      <section className="grid grid-cols-2 auto-rows-fr gap-[14px]">
-        <div className="card-hard px-[14px] pb-[14px] pt-[13px]">
-          <GeoMark shape="square" />
-          <div className="mt-[10px] font-disp text-[34px] leading-[0.9] tracking-disp">{stats.answered}</div>
-          <div className="mt-[7px] text-[11.5px] font-bold uppercase leading-[1.2] tracking-[0.04em] text-ink-2">
+      {/* ── Grille de stats (compacte) ── */}
+      <section className="grid grid-cols-2 auto-rows-fr gap-[12px]">
+        <div className="card-hard px-[12px] pb-[10px] pt-[9px]">
+          <GeoMark shape="square" size={13} />
+          <div className="mt-[7px] font-disp text-[26px] leading-[0.9] tracking-disp">{stats.answered}</div>
+          <div className="mt-[5px] text-[10.5px] font-bold uppercase leading-[1.15] tracking-[0.03em] text-ink-2">
             Questions répondues
           </div>
         </div>
 
-        <div className="card-hard px-[14px] pb-[14px] pt-[13px]">
-          <GeoMark shape="ring" />
-          <div className="mt-[10px] font-disp text-[34px] leading-[0.9] tracking-disp">
+        <div className="card-hard px-[12px] pb-[10px] pt-[9px]">
+          <GeoMark shape="ring" size={13} />
+          <div className="mt-[7px] font-disp text-[26px] leading-[0.9] tracking-disp">
             {stats.successRate}
-            <span className="text-[20px] text-brand">%</span>
+            <span className="text-[16px] text-brand">%</span>
           </div>
-          <div className="mt-[7px] text-[11.5px] font-bold uppercase leading-[1.2] tracking-[0.04em] text-ink-2">
+          <div className="mt-[5px] text-[10.5px] font-bold uppercase leading-[1.15] tracking-[0.03em] text-ink-2">
             Taux de réussite
           </div>
         </div>
 
-        <div className="border-[3px] border-ink bg-ink px-[14px] pb-[14px] pt-[13px] shadow-hard-blue">
-          <GeoMark shape="tri" color="#1E6499" />
-          <div className="mt-[10px] font-disp text-[34px] leading-[0.9] tracking-disp text-cream">{stats.bonus}</div>
-          <div className="mt-[7px] text-[11.5px] font-bold uppercase leading-[1.2] tracking-[0.04em] text-ink-3">
-            Points bonus
+        <Link
+          href="/badges"
+          className="border-[3px] border-ink bg-ink px-[12px] pb-[10px] pt-[9px] shadow-hard-blue"
+        >
+          <GeoMark shape="star" color="#1E6499" size={13} />
+          <div className="mt-[7px] flex h-[24px] items-center text-cream">
+            <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <circle cx="12" cy="8" r="6" />
+              <path d="M8.5 13.5L7 22l5-3 5 3-1.5-8.5" />
+            </svg>
           </div>
-        </div>
+          <div className="mt-[5px] text-[10.5px] font-bold uppercase leading-[1.15] tracking-[0.03em] text-ink-3">
+            Badges
+          </div>
+        </Link>
 
-        <div className="card-hard px-[14px] pb-[14px] pt-[13px]">
-          <GeoMark shape="star" color="#1E6499" />
-          <div className="mt-[10px] font-disp text-[34px] leading-[0.9] tracking-disp">{streak}</div>
-          <div className="mt-[7px] text-[11.5px] font-bold uppercase leading-[1.2] tracking-[0.04em] text-ink-2">
+        <div className="card-hard px-[12px] pb-[10px] pt-[9px]">
+          <GeoMark shape="star" color="#1E6499" size={13} />
+          <div className="mt-[7px] font-disp text-[26px] leading-[0.9] tracking-disp">{streak}</div>
+          <div className="mt-[5px] text-[10.5px] font-bold uppercase leading-[1.15] tracking-[0.03em] text-ink-2">
             Bonnes d&apos;affilée
           </div>
         </div>
 
-        <Link href="/classement" className="card-hard px-[14px] pb-[14px] pt-[13px]">
-          <GeoMark shape="ring" color="#1E6499" />
+        <Link href="/classement" className="card-hard px-[12px] pb-[10px] pt-[9px]">
+          <GeoMark shape="ring" color="#1E6499" size={13} />
           {user.role === 'admin' ? (
             <>
-              <div className="mt-[10px] font-disp text-[34px] leading-[0.9] tracking-disp">—</div>
-              <div className="mt-[7px] text-[11.5px] font-bold uppercase leading-[1.2] tracking-[0.04em] text-ink-2">
+              <div className="mt-[7px] font-disp text-[26px] leading-[0.9] tracking-disp">—</div>
+              <div className="mt-[5px] text-[10.5px] font-bold uppercase leading-[1.15] tracking-[0.03em] text-ink-2">
                 Classement
               </div>
-              <div className="mt-1 text-[11px] font-semibold text-ink-3">Admin (hors classement)</div>
+              <div className="mt-[2px] text-[10px] font-semibold text-ink-3">Admin (hors classement)</div>
             </>
           ) : (
             <>
-              <div className="mt-[10px] font-disp text-[34px] leading-[0.9] tracking-disp">#{rank.rank}</div>
-              <div className="mt-[7px] text-[11.5px] font-bold uppercase leading-[1.2] tracking-[0.04em] text-ink-2">
+              <div className="mt-[7px] font-disp text-[26px] leading-[0.9] tracking-disp">#{rank.rank}</div>
+              <div className="mt-[5px] text-[10.5px] font-bold uppercase leading-[1.15] tracking-[0.03em] text-ink-2">
                 Classement
               </div>
-              <div className="mt-1 text-[11px] font-semibold text-ink-3">sur {rank.total} joueurs</div>
+              <div className="mt-[2px] text-[10px] font-semibold text-ink-3">sur {rank.total} joueurs</div>
             </>
           )}
         </Link>
 
-        <Link href="/bataille" className="card-hard px-[14px] pb-[14px] pt-[13px]">
-          <GeoMark shape="square" />
-          <div className="mt-[10px] font-disp text-[34px] leading-[0.9] tracking-disp">
+        <Link href="/bataille" className="card-hard px-[12px] pb-[10px] pt-[9px]">
+          <GeoMark shape="square" size={13} />
+          <div className="mt-[7px] font-disp text-[26px] leading-[0.9] tracking-disp">
             {battleStats.total}
           </div>
-          <div className="mt-[7px] text-[11.5px] font-bold uppercase leading-[1.2] tracking-[0.04em] text-ink-2">
+          <div className="mt-[5px] text-[10.5px] font-bold uppercase leading-[1.15] tracking-[0.03em] text-ink-2">
             Batailles
           </div>
-          <div className="mt-1 text-[11px] font-bold">
+          <div className="mt-[2px] text-[10px] font-bold">
             <span className="text-success">{battleStats.wins} V</span>
             <span className="text-ink-3"> · </span>
             <span className="text-fail">{battleStats.losses} D</span>
