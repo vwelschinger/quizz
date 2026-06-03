@@ -64,6 +64,7 @@ export default function AdminConsole() {
     role: 'user',
   });
   const [tokenInput, setTokenInput] = useState('');
+  const [eloEdits, setEloEdits] = useState<Record<number, string>>({});
 
   const refresh = useCallback(async () => {
     const [u, t, s, ct] = await Promise.all([
@@ -146,6 +147,30 @@ export default function AdminConsole() {
     setBusy(true);
     await fetch(`/api/admin/users/${id}`, { method: 'DELETE' });
     await refresh();
+    setBusy(false);
+  }
+
+  async function saveElo(id: number, current: number) {
+    const raw = eloEdits[id];
+    const value = raw === undefined ? current : Math.round(Number(raw));
+    if (!Number.isFinite(value)) return;
+    setBusy(true);
+    const res = await fetch(`/api/admin/users/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ elo: value }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setNotice(data.error ?? 'ELO non enregistré');
+    } else {
+      setEloEdits((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      await refresh();
+    }
     setBusy(false);
   }
 
@@ -310,8 +335,27 @@ export default function AdminConsole() {
                 <td>
                   <span className={`adm-role ${u.role === 'admin' ? 'is-admin' : ''}`}>{u.role}</span>
                 </td>
-                <td className="ta-r adm-td-elo">{u.elo}</td>
                 <td className="ta-r">
+                  <input
+                    type="number"
+                    value={eloEdits[u.id] ?? String(u.elo)}
+                    onChange={(e) => setEloEdits({ ...eloEdits, [u.id]: e.target.value })}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveElo(u.id, u.elo);
+                    }}
+                    className="w-[70px] border-2 border-admin-border bg-[#14110d] px-1 py-1 text-right font-disp text-[14px] text-cream"
+                    aria-label="ELO"
+                  />
+                </td>
+                <td className="ta-r">
+                  <button
+                    onClick={() => saveElo(u.id, u.elo)}
+                    disabled={busy}
+                    className="mr-3 text-[15px] leading-none text-ink-3 hover:text-[#7fd6a3]"
+                    title="Enregistrer l'ELO"
+                  >
+                    ✓
+                  </button>
                   <button
                     onClick={() => removeUser(u.id)}
                     className="text-[16px] leading-none text-ink-3 hover:text-fail"

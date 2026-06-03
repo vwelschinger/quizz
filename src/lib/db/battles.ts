@@ -260,6 +260,22 @@ export async function countPendingBattlesForUser(userId: number): Promise<number
   return row?.count ?? 0;
 }
 
+/** Bilan batailles du joueur : total terminées, victoires, défaites. */
+export async function getBattleStatsForUser(
+  userId: number,
+): Promise<{ total: number; wins: number; losses: number }> {
+  const row = await queryOne<{ total: number; wins: number; losses: number }>(
+    `SELECT
+       (count(*) FILTER (WHERE status = 'finished'))::int AS total,
+       (count(*) FILTER (WHERE status = 'finished' AND winner_id = $1))::int AS wins,
+       (count(*) FILTER (WHERE status = 'finished' AND winner_id IS NOT NULL AND winner_id <> $1))::int AS losses
+     FROM battles
+     WHERE challenger_id = $1 OR opponent_id = $1`,
+    [userId],
+  );
+  return { total: row?.total ?? 0, wins: row?.wins ?? 0, losses: row?.losses ?? 0 };
+}
+
 export interface BattleQuestionReview {
   prompt: string;
   correctAnswer: string;

@@ -3,7 +3,8 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth/session';
 import { getUserStats, getRecentEloTrend, getCurrentStreak } from '@/lib/db/answers';
 import { countQuestions } from '@/lib/db/questions';
-import { countPendingBattlesForUser } from '@/lib/db/battles';
+import { countPendingBattlesForUser, getBattleStatsForUser } from '@/lib/db/battles';
+import { getUserRank } from '@/lib/db/leaderboard';
 import { playerTier } from '@/lib/quiz/tier';
 import EmojiAvatar from './EmojiAvatar';
 import LogoutButton from './LogoutButton';
@@ -43,13 +44,16 @@ export default async function DashboardPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
 
-  const [stats, trend, streak, totalQuestions, pendingBattles] = await Promise.all([
-    getUserStats(user.id),
-    getRecentEloTrend(user.id),
-    getCurrentStreak(user.id),
-    countQuestions(),
-    countPendingBattlesForUser(user.id),
-  ]);
+  const [stats, trend, streak, totalQuestions, pendingBattles, rank, battleStats] =
+    await Promise.all([
+      getUserStats(user.id),
+      getRecentEloTrend(user.id),
+      getCurrentStreak(user.id),
+      countQuestions(),
+      countPendingBattlesForUser(user.id),
+      getUserRank(user.elo),
+      getBattleStatsForUser(user.id),
+    ]);
   const tier = playerTier(user.elo);
 
   return (
@@ -149,6 +153,30 @@ export default async function DashboardPage() {
           <div className="mt-[10px] font-disp text-[34px] leading-[0.9] tracking-disp">{streak}</div>
           <div className="mt-[7px] text-[11.5px] font-bold uppercase leading-[1.2] tracking-[0.04em] text-ink-2">
             Série en cours
+          </div>
+        </div>
+
+        <div className="card-hard px-[14px] pb-[14px] pt-[13px]">
+          <GeoMark shape="ring" color="#1E6499" />
+          <div className="mt-[10px] font-disp text-[34px] leading-[0.9] tracking-disp">#{rank.rank}</div>
+          <div className="mt-[7px] text-[11.5px] font-bold uppercase leading-[1.2] tracking-[0.04em] text-ink-2">
+            Classement
+          </div>
+          <div className="mt-1 text-[11px] font-semibold text-ink-3">sur {rank.total} joueurs</div>
+        </div>
+
+        <div className="card-hard px-[14px] pb-[14px] pt-[13px]">
+          <GeoMark shape="square" />
+          <div className="mt-[10px] font-disp text-[34px] leading-[0.9] tracking-disp">
+            {battleStats.total}
+          </div>
+          <div className="mt-[7px] text-[11.5px] font-bold uppercase leading-[1.2] tracking-[0.04em] text-ink-2">
+            Batailles
+          </div>
+          <div className="mt-1 text-[11px] font-bold">
+            <span className="text-success">{battleStats.wins} V</span>
+            <span className="text-ink-3"> · </span>
+            <span className="text-fail">{battleStats.losses} D</span>
           </div>
         </div>
       </section>

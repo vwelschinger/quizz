@@ -39,3 +39,8 @@ export function createUser(
 export async function deleteUser(id: number): Promise<void> {
   await query('DELETE FROM users WHERE id = $1', [id]);
 }
+
+/** Fixe manuellement l'ELO d'un utilisateur (console admin). */
+export async function updateUserElo(id: number, elo: number): Promise<void> {
+  await query('UPDATE users SET elo = $1 WHERE id = $2', [elo, id]);
+}

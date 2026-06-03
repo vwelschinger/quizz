@@ -1,4 +1,4 @@
-import { query } from './pool';
+import { query, queryOne } from './pool';
 
 export interface LeaderboardEntry {
   id: number;
@@ -24,4 +24,15 @@ export function getLeaderboard(limit = 100): Promise<LeaderboardEntry[]> {
      LIMIT $1`,
     [limit],
   );
+}
+
+/** Rang du joueur (par ELO) parmi les joueurs (role user) + total de joueurs. */
+export async function getUserRank(userElo: number): Promise<{ rank: number; total: number }> {
+  const row = await queryOne<{ rank: number; total: number }>(
+    `SELECT
+       (SELECT count(*)::int FROM users WHERE role = 'user' AND elo > $1) + 1 AS rank,
+       (SELECT count(*)::int FROM users WHERE role = 'user') AS total`,
+    [userElo],
+  );
+  return { rank: row?.rank ?? 1, total: row?.total ?? 0 };
 }
