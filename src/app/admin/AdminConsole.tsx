@@ -26,6 +26,13 @@ interface SyncState {
   startedAt: string;
   finishedAt: string;
 }
+interface Contestation {
+  id: number;
+  username: string;
+  prompt: string;
+  correctAnswer: string;
+  chosenAnswer: string;
+}
 
 function Plus() {
   return (
@@ -46,6 +53,7 @@ export default function AdminConsole() {
   const [users, setUsers] = useState<UserSummary[]>([]);
   const [token, setToken] = useState<{ status: TokenStatus; baseUrl: string | null } | null>(null);
   const [sync, setSync] = useState<SyncState | null>(null);
+  const [contestations, setContestations] = useState<Contestation[]>([]);
   const [busy, setBusy] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -58,14 +66,16 @@ export default function AdminConsole() {
   const [tokenInput, setTokenInput] = useState('');
 
   const refresh = useCallback(async () => {
-    const [u, t, s] = await Promise.all([
+    const [u, t, s, ct] = await Promise.all([
       fetch('/api/admin/users').then((r) => r.json()),
       fetch('/api/admin/token').then((r) => r.json()),
       fetch('/api/admin/sync').then((r) => r.json()),
+      fetch('/api/admin/contestations').then((r) => r.json()),
     ]);
     setUsers(u.users ?? []);
     setToken({ status: t.status, baseUrl: t.baseUrl });
     setSync(s.state ?? null);
+    setContestations(ct.contestations ?? []);
   }, []);
 
   useEffect(() => {
@@ -99,6 +109,17 @@ export default function AdminConsole() {
     setSync(data.state ?? null);
     if (data.state && !data.state.ok) setNotice(data.state.error ?? 'Synchro en échec');
     setSyncing(false);
+  }
+
+  async function resolveContest(id: number, accept: boolean) {
+    setBusy(true);
+    await fetch(`/api/admin/contestations/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accept }),
+    });
+    await refresh();
+    setBusy(false);
   }
 
   async function createUser(e: React.FormEvent<HTMLFormElement>) {
@@ -189,6 +210,45 @@ export default function AdminConsole() {
           {syncing ? 'SYNCHRONISATION…' : 'SCRAPING MANUEL'}
         </button>
         <div className="adm-hint">{syncHint}</div>
+      </section>
+
+      {/* Contestations */}
+      <section className="adm-panel">
+        <div className="adm-panel-head">
+          <span>CONTESTATIONS · {contestations.length}</span>
+        </div>
+        {contestations.length === 0 ? (
+          <p className="text-[12px] text-[#79705f]">Aucune contestation en attente.</p>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {contestations.map((c) => (
+              <div key={c.id} className="border border-admin-border p-3">
+                <div className="text-[13px] text-[#c7bda8]">{c.prompt}</div>
+                <div className="mt-2 text-[12px]">
+                  <span className="text-[#79705f]">Bonne réponse :</span>{' '}
+                  <span className="text-cream">{c.correctAnswer}</span>
+                </div>
+                <div className="text-[12px]">
+                  <span className="text-[#79705f]">Contestée ({c.username}) :</span>{' '}
+                  <span className="text-cream">{c.chosenAnswer}</span>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    onClick={() => resolveContest(c.id, true)}
+                    disabled={busy}
+                    className="adm-btn-ghost"
+                    style={{ borderColor: '#1E9E5A', color: '#7fd6a3' }}
+                  >
+                    Accepter
+                  </button>
+                  <button onClick={() => resolveContest(c.id, false)} disabled={busy} className="adm-btn-ghost">
+                    Rejeter
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Utilisateurs */}

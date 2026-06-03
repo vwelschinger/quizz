@@ -32,6 +32,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Migrations + scripts (pour migrate / seed-admin dans le conteneur)
 COPY --from=builder --chown=nextjs:nodejs /app/db ./db
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
+# bcryptjs est bundlé dans l'app par Next (donc absent du node_modules standalone) :
+# on l'ajoute pour que scripts/seed-admin.mjs puisse l'importer.
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/bcryptjs ./node_modules/bcryptjs
 
 USER nextjs
 EXPOSE 3000

@@ -17,7 +17,7 @@ services:
       - LTDS_START_DAY=${LTDS_START_DAY}
       - LTDS_MAX_DAYS_PER_SYNC=${LTDS_MAX_DAYS_PER_SYNC}
       - TZ=${TZ}
-      - SYNC_CRON=0 6 * * *
+      - SYNC_CRON=30 12 * * *
       - SYNC_SCHEDULER_ENABLED=true
     depends_on: [postgres]
     networks: [stack]

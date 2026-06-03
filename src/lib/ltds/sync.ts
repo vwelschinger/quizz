@@ -12,6 +12,9 @@ const LAST_DAY_KEY = 'ltds_last_day';
 const DEFAULT_BASE_URL = 'https://api.latabledessavoirs.fr';
 const START_DAY = Number(process.env.LTDS_START_DAY ?? '1');
 const MAX_DAYS_PER_SYNC = Number(process.env.LTDS_MAX_DAYS_PER_SYNC ?? '40');
+// Nombre d'absences (404) consécutives au-delà duquel on considère avoir atteint
+// le futur (fin du backfill). En deçà, un 404 est un simple "trou" qu'on saute.
+const FUTURE_GAP_LIMIT = Number(process.env.LTDS_FUTURE_GAP_LIMIT ?? '7');
 const REQUEST_DELAY_MS = 100;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -57,8 +60,9 @@ async function getConfig(): Promise<LtdsClientConfig | null> {
 
 /**
  * Synchro par backfill incrémental : à partir du curseur (dernier jour importé),
- * avance jour par jour (facile + difficile) tant que les jours sont "complets"
- * (stats communautaires présentes), dans la limite de MAX_DAYS_PER_SYNC.
+ * avance jour par jour (facile + difficile). Les jours manquants (404) sont sautés
+ * (trous ponctuels) jusqu'à FUTURE_GAP_LIMIT absences consécutives = futur atteint.
+ * Le curseur n'avance QUE sur un import réussi → le cron reprend toujours au bon endroit.
  */
 export async function runSync(): Promise<SyncState> {
   const startedAt = new Date().toISOString();
@@ -88,22 +92,33 @@ export async function runSync(): Promise<SyncState> {
   let more = false;
 
   try {
-    for (let i = 0; i < MAX_DAYS_PER_SYNC; i++) {
-      const day = lastDay + 1;
+    let day = lastDay + 1;
+    let consecutiveMisses = 0;
+    const maxIterations = MAX_DAYS_PER_SYNC + FUTURE_GAP_LIMIT + 60; // borne de sécurité
 
+    for (let i = 0; i < maxIterations; i++) {
       const facile = await fetchGameDay(config, 'facile', day);
+
       if (!facile.ok) {
         if (facile.status === 401 || facile.status === 403) {
           throw new Error(`Token refusé (HTTP ${facile.status}). Mets à jour le token.`);
         }
-        more = false; // jour futur / inexistant → terminé
-        break;
+        consecutiveMisses++;
+        if (consecutiveMisses >= FUTURE_GAP_LIMIT) {
+          more = false; // futur atteint
+          break;
+        }
+        day++; // trou ponctuel : on saute (le curseur ne bouge pas)
+        await sleep(REQUEST_DELAY_MS);
+        continue;
       }
+
       if (!isDayComplete(facile.payload)) {
         more = true; // jour en cours (pas encore de stats) → réessayer plus tard
         break;
       }
 
+      consecutiveMisses = 0;
       for (const q of mapGameDay(facile.payload)) {
         await upsertQuestion(q);
         imported++;
@@ -122,8 +137,13 @@ export async function runSync(): Promise<SyncState> {
       lastDay = day;
       daysImported++;
       await setSetting(LAST_DAY_KEY, lastDay);
+      day++;
+
+      if (daysImported >= MAX_DAYS_PER_SYNC) {
+        more = true; // plafond atteint, il reste des jours
+        break;
+      }
     }
-    if (daysImported === MAX_DAYS_PER_SYNC) more = true; // plafond atteint, il reste des jours
 
     const state = finish({ ok: true, imported, daysImported, lastDay, more, startedAt });
     await setSetting(SYNC_STATE_KEY, state);

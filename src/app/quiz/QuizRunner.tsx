@@ -56,6 +56,7 @@ export default function QuizRunner() {
   const [result, setResult] = useState<AnswerResult | null>(null);
   const [entries, setEntries] = useState<RecapEntry[]>([]);
   const [message, setMessage] = useState('');
+  const [contest, setContest] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
   const loadNext = useCallback(async (count: number) => {
     if (count >= SESSION_SIZE) {
@@ -65,6 +66,7 @@ export default function QuizRunner() {
     setPhase('loading');
     setResult(null);
     setValue('');
+    setContest('idle');
     try {
       const res = await fetch('/api/quiz/next');
       if (!res.ok) {
@@ -133,6 +135,21 @@ export default function QuizRunner() {
   function restart() {
     setEntries([]);
     loadNext(0);
+  }
+
+  async function contestAnswer() {
+    if (!question) return;
+    setContest('sending');
+    try {
+      const res = await fetch('/api/quiz/contest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionId: question.id }),
+      });
+      setContest(res.ok ? 'sent' : 'error');
+    } catch {
+      setContest('error');
+    }
   }
 
   if (phase === 'recap') {
@@ -263,6 +280,21 @@ export default function QuizRunner() {
             prevElo={result.eloBefore}
             communityRate={question.communitySuccessRate}
           />
+
+          {!result.isCorrect && (
+            <button
+              type="button"
+              onClick={contestAnswer}
+              disabled={contest === 'sending' || contest === 'sent'}
+              className="flex items-center justify-center gap-2 border-[2px] border-ink bg-card py-2 font-sans text-[12px] font-bold uppercase tracking-[0.06em] text-ink-2 disabled:opacity-60"
+            >
+              {contest === 'sent'
+                ? '⚑ Contestation envoyée'
+                : contest === 'error'
+                  ? '⚑ Erreur — réessayer'
+                  : '⚑ Contester ma réponse'}
+            </button>
+          )}
 
           <button className="cta-primary cta-next" onClick={next}>
             {completed + 1 >= SESSION_SIZE ? 'Voir la correction' : 'Question suivante'}

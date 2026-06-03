@@ -48,9 +48,13 @@ export default function LoginForm() {
     <div className="flex min-h-dvh flex-col px-[22px] pb-10 pt-[62px]">
       <div className="auth-mark">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="auth-logo" src="/emblem.svg" alt="RevoRun Quizz" />
+        <img
+          className="mx-auto mb-3 block w-[260px] max-w-full"
+          src="/logo-revorun.svg"
+          alt="Revolution On The Run"
+        />
         <div className="auth-word">
-          REVO<span className="red">RUN</span> QUIZZ
+          Quizzs à <span className="red">Gogo</span>
         </div>
         <div className="auth-tag">L&apos;APPRENTISSAGE EN MOUVEMENT</div>
       </div>

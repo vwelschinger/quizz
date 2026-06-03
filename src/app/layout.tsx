@@ -16,7 +16,7 @@ const archivo = Archivo({
 });
 
 export const metadata: Metadata = {
-  title: 'RevoRun Quizz',
+  title: 'Quizzs à Gogo',
   description: 'Quiz constructiviste avec progression ELO joueur-vs-question.',
 };
 
