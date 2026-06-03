@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { listBattlesForUser, type BattleSummary } from '@/lib/db/battles';
 import { listOpponents } from '@/lib/db/users';
 import CreateBattleForm from './CreateBattleForm';
+import LocalTime from '../LocalTime';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,6 +37,9 @@ function BattleItem({ b }: { b: BattleSummary }) {
               : b.opponentPlayed
                 ? 'Résolution…'
                 : "En attente de l'adversaire"}
+        </div>
+        <div className={`mt-1 text-[10px] font-medium ${toPlay ? 'text-cream/70' : 'text-ink-3'}`}>
+          <LocalTime iso={b.createdAt} />
         </div>
       </div>
       {toPlay && <span className="shrink-0 font-disp text-[14px] uppercase tracking-disp">Jouer →</span>}

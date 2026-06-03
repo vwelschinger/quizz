@@ -8,7 +8,7 @@ import { getUserRank } from '@/lib/db/leaderboard';
 import { playerTier } from '@/lib/quiz/tier';
 import EmojiAvatar from './EmojiAvatar';
 import LogoutButton from './LogoutButton';
-import NotificationBanner from './NotificationBanner';
+import NotificationMenu from './NotificationMenu';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,7 +59,6 @@ export default async function DashboardPage() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[440px] flex-col px-[18px] pb-[42px] pt-[60px]">
-      <NotificationBanner />
       {/* ── Header ── */}
       <header className="mb-6 flex items-start justify-between">
         <div className="relative">
@@ -69,7 +68,10 @@ export default async function DashboardPage() {
           </div>
           <div className="mt-2 h-[9px] w-[76px] bg-brand" />
         </div>
-        <EmojiAvatar />
+        <div className="flex items-center gap-2">
+          <NotificationMenu />
+          <EmojiAvatar />
+        </div>
       </header>
 
       {/* ── Bloc ELO héros ── */}

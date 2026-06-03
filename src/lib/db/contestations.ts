@@ -144,6 +144,16 @@ async function recreditBattle(
     [chScore, opScore, outcome.deltaA, outcome.deltaB, winnerId, battleId],
   );
 
+  // notifier l'AUTRE joueur (non contestataire) si son ELO a bougé
+  const otherId = userId === b.challenger_id ? b.opponent_id : b.challenger_id;
+  const otherAdjust = userId === b.challenger_id ? opAdjust : chAdjust;
+  if (otherAdjust !== 0) {
+    await client.query(
+      "INSERT INTO notifications (user_id, kind, prompt, elo_delta, link) VALUES ($1, 'battle_recomputed', $2, $3, $4)",
+      [otherId, 'Une bataille a été recalculée suite à une contestation.', otherAdjust, `/bataille/${battleId}`],
+    );
+  }
+
   return userId === b.challenger_id ? chAdjust : opAdjust;
 }
 
