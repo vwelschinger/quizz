@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth/session';
-import { getUserStats, getRecentEloTrend, getCurrentStreak } from '@/lib/db/answers';
+import { getUserStats, getRecentEloTrend, getCurrentStreak, getDailyStreak } from '@/lib/db/answers';
 import { countQuestions } from '@/lib/db/questions';
 import { countPendingBattlesForUser, getBattleStatsForUser } from '@/lib/db/battles';
 import { getUserRank } from '@/lib/db/leaderboard';
@@ -45,7 +45,7 @@ export default async function DashboardPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
 
-  const [stats, trend, streak, totalQuestions, pendingBattles, rank, battleStats] =
+  const [stats, trend, streak, totalQuestions, pendingBattles, rank, battleStats, dailyStreak] =
     await Promise.all([
       getUserStats(user.id),
       getRecentEloTrend(user.id),
@@ -54,6 +54,7 @@ export default async function DashboardPage() {
       countPendingBattlesForUser(user.id),
       getUserRank(user.elo),
       getBattleStatsForUser(user.id),
+      getDailyStreak(user.id),
     ]);
   const tier = playerTier(user.elo);
 
@@ -123,6 +124,31 @@ export default async function DashboardPage() {
         </div>
       </section>
 
+      {/* ── Série quotidienne (revenir chaque jour) ── */}
+      {dailyStreak.days > 0 ? (
+        <div className="mb-[14px] flex items-center gap-[10px] border-[3px] border-ink bg-brand-soft px-3 py-2 shadow-hard">
+          <span className="text-[22px] leading-none">🔥</span>
+          <div className="text-[13px] font-bold leading-tight">
+            {dailyStreak.days} jour{dailyStreak.days > 1 ? 's' : ''} d&apos;affilée
+            <span className="block text-[11px] font-semibold text-ink-2">
+              {dailyStreak.playedToday
+                ? 'Reviens demain pour continuer ta série !'
+                : "Joue aujourd'hui pour ne pas la perdre !"}
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div className="mb-[14px] flex items-center gap-[10px] border-[3px] border-ink bg-card px-3 py-2 shadow-hard">
+          <span className="text-[22px] leading-none">🔥</span>
+          <div className="text-[13px] font-bold leading-tight">
+            Commence ta série
+            <span className="block text-[11px] font-semibold text-ink-2">
+              Joue aujourd&apos;hui, puis reviens chaque jour !
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* ── Grille de stats 2×2 ── */}
       <section className="grid grid-cols-2 auto-rows-fr gap-[14px]">
         <div className="card-hard px-[14px] pb-[14px] pt-[13px]">
@@ -156,7 +182,7 @@ export default async function DashboardPage() {
           <GeoMark shape="star" color="#1E6499" />
           <div className="mt-[10px] font-disp text-[34px] leading-[0.9] tracking-disp">{streak}</div>
           <div className="mt-[7px] text-[11.5px] font-bold uppercase leading-[1.2] tracking-[0.04em] text-ink-2">
-            Série en cours
+            Bonnes d&apos;affilée
           </div>
         </div>
 

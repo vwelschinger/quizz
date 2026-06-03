@@ -157,6 +157,38 @@ export async function getCurrentStreak(userId: number): Promise<number> {
   return streak;
 }
 
+/**
+ * Série quotidienne : nombre de jours calendaires consécutifs (fuseau Europe/Paris) où le joueur a
+ * répondu à ≥ 1 question, en remontant depuis aujourd'hui. La série reste « vivante » si le joueur a
+ * joué hier mais pas encore aujourd'hui ; elle est rompue (0) si le dernier jour joué est antérieur à hier.
+ */
+export async function getDailyStreak(
+  userId: number,
+): Promise<{ days: number; playedToday: boolean }> {
+  const rows = await query<{ d: string }>(
+    `SELECT DISTINCT to_char((answered_at AT TIME ZONE 'Europe/Paris')::date, 'YYYY-MM-DD') AS d
+     FROM answers WHERE user_id = $1
+     ORDER BY d DESC`,
+    [userId],
+  );
+  if (rows.length === 0) return { days: 0, playedToday: false };
+
+  const toDayNum = (s: string) => Math.floor(Date.parse(`${s}T00:00:00Z`) / 86400000);
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }); // YYYY-MM-DD
+  const today = toDayNum(todayStr);
+  const days = rows.map((r) => toDayNum(r.d)); // décroissant
+
+  const playedToday = days[0] === today;
+  if (days[0] < today - 1) return { days: 0, playedToday: false };
+
+  let streak = 1;
+  for (let i = 1; i < days.length; i++) {
+    if (days[i] === days[i - 1] - 1) streak++;
+    else break;
+  }
+  return { days: streak, playedToday };
+}
+
 export interface EloHistoryRow {
   questionId: number;
   prompt: string;
