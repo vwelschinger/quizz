@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Tu ne peux pas te défier toi-même' }, { status: 400 });
   }
 
-  const battle = await createBattle(user.id, opponent.id, parsed.data.size ?? 5);
+  const battle = await createBattle(user.id, opponent.id, parsed.data.size ?? 5, user.username);
   if (!battle) {
     return NextResponse.json(
       { error: 'Pas assez de questions disponibles pour une bataille (lance une synchro).' },

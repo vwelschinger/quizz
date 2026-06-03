@@ -5,11 +5,12 @@ export interface NotificationView {
   kind: string;
   prompt: string | null;
   eloDelta: number;
+  link: string | null;
 }
 
 export function getUnreadNotifications(userId: number): Promise<NotificationView[]> {
   return query<NotificationView>(
-    `SELECT id, kind, prompt, elo_delta AS "eloDelta"
+    `SELECT id, kind, prompt, elo_delta AS "eloDelta", link
      FROM notifications
      WHERE user_id = $1 AND read = false
      ORDER BY created_at DESC

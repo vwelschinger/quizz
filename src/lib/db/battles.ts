@@ -58,6 +58,7 @@ export async function createBattle(
   challengerId: number,
   opponentId: number,
   size = 5,
+  challengerName?: string,
 ): Promise<{ id: number } | null> {
   const questionIds = await pickBattleQuestionIds(challengerId, opponentId, size);
   if (questionIds.length === 0) return null;
@@ -66,7 +67,20 @@ export async function createBattle(
      VALUES ($1, $2, $3::jsonb) RETURNING id`,
     [challengerId, opponentId, JSON.stringify(questionIds)],
   );
-  return row ? { id: row.id } : null;
+  if (!row) return null;
+
+  // notifier l'adversaire qu'il est défié
+  const name =
+    challengerName ??
+    (await queryOne<{ username: string }>('SELECT username FROM users WHERE id = $1', [challengerId]))
+      ?.username ??
+    'Un joueur';
+  await query(
+    "INSERT INTO notifications (user_id, kind, prompt, link) VALUES ($1, 'battle_challenge', $2, $3)",
+    [opponentId, `${name} te défie en bataille !`, `/bataille/${row.id}`],
+  );
+
+  return { id: row.id };
 }
 
 export interface BattlePlayResult {
@@ -170,6 +184,18 @@ export async function playBattle(
          challenger_elo_delta = $3, opponent_elo_delta = $4, winner_id = $5, resolved_at = now()
        WHERE id = $6`,
       [ch.elo, op.elo, chDelta, opDelta, winnerId, battleId],
+    );
+
+    // notifier l'AUTRE joueur (celui qui avait joué en premier) que la bataille est terminée
+    const otherId = isChallenger ? battle.opponent_id : battle.challenger_id;
+    const otherDelta = isChallenger ? opDelta : chDelta;
+    const resolverName = isChallenger ? ch.username : op.username;
+    const otherScore = isChallenger ? opponentScore : challengerScore;
+    const otherLabel =
+      otherScore > score ? 'Victoire' : otherScore < score ? 'Défaite' : 'Match nul';
+    await client.query(
+      "INSERT INTO notifications (user_id, kind, prompt, elo_delta, link) VALUES ($1, 'battle_finished', $2, $3, $4)",
+      [otherId, `Bataille vs ${resolverName} terminée — ${otherLabel}`, otherDelta, `/bataille/${battleId}`],
     );
 
     const myDelta = isChallenger ? chDelta : opDelta;
@@ -277,6 +303,7 @@ export async function getBattleStatsForUser(
 }
 
 export interface BattleQuestionReview {
+  questionId: number;
   prompt: string;
   correctAnswer: string;
   myAnswer: string | null;
@@ -321,6 +348,7 @@ export async function getBattleReview(
     const mine = aByKey.get(k(userId, qid));
     const opp = aByKey.get(k(opponentId, qid));
     return {
+      questionId: qid,
       prompt: q?.prompt ?? '',
       correctAnswer: q?.correct_answer ?? '',
       myAnswer: mine?.chosen_answer ?? null,

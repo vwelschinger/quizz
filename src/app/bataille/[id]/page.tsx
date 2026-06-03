@@ -79,7 +79,7 @@ export default async function BattleDetailPage({ params }: { params: Promise<{ i
           ELO {view.eloDelta >= 0 ? `+${view.eloDelta}` : view.eloDelta}
         </div>
       </div>
-      <BattleReview review={view.review} opponentName={view.opponentName} />
+      <BattleReview review={view.review} opponentName={view.opponentName} battleId={Number(id)} />
       <Link href="/bataille" className="cta-primary mt-5">
         Retour aux batailles
       </Link>

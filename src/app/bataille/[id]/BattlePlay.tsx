@@ -122,6 +122,7 @@ export default function BattlePlay({
           <BattleReview
             review={result.review ?? []}
             opponentName={result.opponentName ?? opponentName}
+            battleId={battleId}
           />
           <Link href="/bataille" className="cta-primary mt-5">
             Retour aux batailles

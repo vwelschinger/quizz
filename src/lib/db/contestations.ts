@@ -1,5 +1,7 @@
+import type { PoolClient } from 'pg';
 import { query, queryOne, withTransaction } from './pool';
 import { updatePlayerElo } from '@/lib/quiz/elo';
+import { battleEloOutcome } from '@/lib/quiz/battleElo';
 import { bonusPoints } from '@/lib/quiz/scoring';
 
 interface ContestationRow {
@@ -8,9 +10,10 @@ interface ContestationRow {
   question_id: number;
   chosen_answer: string;
   status: 'pending' | 'accepted' | 'rejected';
+  battle_id: number | null;
 }
 
-/** Crée une contestation : seulement si le joueur a répondu FAUX à cette question. */
+/** Contestation d'une réponse SOLO : seulement si le joueur a répondu FAUX en solo. */
 export async function createContestation(
   userId: number,
   questionId: number,
@@ -31,18 +34,42 @@ export async function createContestation(
   return { ok: true };
 }
 
+/** Contestation d'une réponse de BATAILLE : seulement si la réponse de bataille était fausse. */
+export async function createBattleContestation(
+  userId: number,
+  battleId: number,
+  questionId: number,
+): Promise<{ ok: boolean; reason?: string }> {
+  const ba = await queryOne<{ is_correct: boolean; chosen_answer: string | null }>(
+    'SELECT is_correct, chosen_answer FROM battle_answers WHERE battle_id = $1 AND user_id = $2 AND question_id = $3',
+    [battleId, userId, questionId],
+  );
+  if (!ba) return { ok: false, reason: 'Réponse introuvable.' };
+  if (ba.is_correct) return { ok: false, reason: 'Ta réponse est déjà correcte.' };
+
+  await query(
+    `INSERT INTO contestations (user_id, question_id, chosen_answer, battle_id)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (user_id, question_id) DO NOTHING`,
+    [userId, questionId, ba.chosen_answer ?? '', battleId],
+  );
+  return { ok: true };
+}
+
 export interface ContestationView {
   id: number;
   username: string;
   prompt: string;
   correctAnswer: string;
   chosenAnswer: string;
+  battleId: number | null;
 }
 
 export function listPendingContestations(): Promise<ContestationView[]> {
   return query<ContestationView>(
     `SELECT c.id, u.username, q.prompt,
-            q.correct_answer AS "correctAnswer", c.chosen_answer AS "chosenAnswer"
+            q.correct_answer AS "correctAnswer", c.chosen_answer AS "chosenAnswer",
+            c.battle_id AS "battleId"
      FROM contestations c
      JOIN users u ON u.id = c.user_id
      JOIN questions q ON q.id = c.question_id
@@ -61,10 +88,69 @@ export async function countPendingContestations(): Promise<number> {
 const norm = (s: string) => s.trim().toLowerCase();
 
 /**
- * Résout une contestation. Si acceptée :
- *  - la réponse contestée devient une variante acceptée de la question ;
- *  - la réponse du joueur est repassée en "correct" et son ELO est recrédité
- *    (différence entre le gain mérité et la perte initiale) + bonus.
+ * Recalcule une bataille après qu'une réponse a été passée à juste (contestation acceptée).
+ * Renvoie l'ajustement d'ELO du contestataire.
+ */
+async function recreditBattle(
+  client: PoolClient,
+  battleId: number,
+  userId: number,
+  questionId: number,
+): Promise<number> {
+  await client.query(
+    'UPDATE battle_answers SET is_correct = true WHERE battle_id = $1 AND user_id = $2 AND question_id = $3',
+    [battleId, userId, questionId],
+  );
+  const bRes = await client.query<{
+    challenger_id: number;
+    opponent_id: number;
+    challenger_elo_before: number | null;
+    opponent_elo_before: number | null;
+    challenger_elo_delta: number | null;
+    opponent_elo_delta: number | null;
+    status: string;
+  }>(
+    `SELECT challenger_id, opponent_id, challenger_elo_before, opponent_elo_before,
+            challenger_elo_delta, opponent_elo_delta, status
+     FROM battles WHERE id = $1 FOR UPDATE`,
+    [battleId],
+  );
+  const b = bRes.rows[0];
+  if (!b || b.status !== 'finished' || b.challenger_elo_before == null || b.opponent_elo_before == null) {
+    return 0;
+  }
+
+  const scRes = await client.query<{ user_id: number; n: number }>(
+    'SELECT user_id, (count(*) FILTER (WHERE is_correct))::int AS n FROM battle_answers WHERE battle_id = $1 GROUP BY user_id',
+    [battleId],
+  );
+  let chScore = 0;
+  let opScore = 0;
+  for (const r of scRes.rows) {
+    if (r.user_id === b.challenger_id) chScore = r.n;
+    else if (r.user_id === b.opponent_id) opScore = r.n;
+  }
+
+  const outcome = battleEloOutcome(b.challenger_elo_before, b.opponent_elo_before, chScore, opScore);
+  const chAdjust = outcome.deltaA - (b.challenger_elo_delta ?? 0);
+  const opAdjust = outcome.deltaB - (b.opponent_elo_delta ?? 0);
+  const winnerId = chScore > opScore ? b.challenger_id : chScore < opScore ? b.opponent_id : null;
+
+  if (chAdjust !== 0) await client.query('UPDATE users SET elo = elo + $1 WHERE id = $2', [chAdjust, b.challenger_id]);
+  if (opAdjust !== 0) await client.query('UPDATE users SET elo = elo + $1 WHERE id = $2', [opAdjust, b.opponent_id]);
+  await client.query(
+    `UPDATE battles SET challenger_score = $1, opponent_score = $2,
+       challenger_elo_delta = $3, opponent_elo_delta = $4, winner_id = $5 WHERE id = $6`,
+    [chScore, opScore, outcome.deltaA, outcome.deltaB, winnerId, battleId],
+  );
+
+  return userId === b.challenger_id ? chAdjust : opAdjust;
+}
+
+/**
+ * Résout une contestation (solo ou bataille). Si acceptée : la réponse devient une variante
+ * acceptée de la question, et l'ELO du joueur est recrédité (solo) ou la bataille recalculée (PvP).
+ * Dans tous les cas, une notification est créée pour le joueur.
  */
 export async function resolveContestation(
   id: number,
@@ -90,11 +176,11 @@ export async function resolveContestation(
     );
     const q = qRes.rows[0];
     const prompt = q?.prompt ?? null;
-    let eloDelta = 0; // évolution d'ELO recréditée au joueur (0 si refus / déjà juste)
+    let eloDelta = 0;
 
     if (accept) {
+      // 1) ajouter la réponse contestée aux variantes acceptées (solo + bataille)
       if (q) {
-        // 1) ajouter la réponse contestée aux variantes acceptées
         const accepted: string[] = Array.isArray(q.accepted_answers)
           ? (q.accepted_answers as string[])
           : q.correct_answer
@@ -107,8 +193,13 @@ export async function resolveContestation(
             [JSON.stringify(accepted), c.question_id],
           );
         }
+      }
 
-        // 2) recréditer le joueur (sa réponse passe de faux à juste)
+      if (c.battle_id != null) {
+        // 2a) bataille : on recalcule le résultat + l'ELO PvP des deux joueurs
+        eloDelta = await recreditBattle(client, c.battle_id, c.user_id, c.question_id);
+      } else if (q) {
+        // 2b) solo : on recrédite la réponse du joueur
         const aRes = await client.query<{
           id: string;
           is_correct: boolean;
@@ -132,6 +223,7 @@ export async function resolveContestation(
           await client.query('UPDATE users SET elo = elo + $1 WHERE id = $2', [eloDelta, c.user_id]);
         }
       }
+
       await client.query(
         "UPDATE contestations SET status = 'accepted', resolved_at = now(), resolved_by = $1 WHERE id = $2",
         [adminId, id],
@@ -143,10 +235,10 @@ export async function resolveContestation(
       );
     }
 
-    // notification au joueur (acceptée ou refusée), avec l'évolution d'ELO
+    const link = c.battle_id != null ? `/bataille/${c.battle_id}` : null;
     await client.query(
-      'INSERT INTO notifications (user_id, kind, prompt, elo_delta) VALUES ($1, $2, $3, $4)',
-      [c.user_id, accept ? 'contest_accepted' : 'contest_rejected', prompt, eloDelta],
+      'INSERT INTO notifications (user_id, kind, prompt, elo_delta, link) VALUES ($1, $2, $3, $4, $5)',
+      [c.user_id, accept ? 'contest_accepted' : 'contest_rejected', prompt, eloDelta, link],
     );
     return true;
   });

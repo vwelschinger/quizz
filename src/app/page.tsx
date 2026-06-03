@@ -158,7 +158,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <div className="card-hard px-[14px] pb-[14px] pt-[13px]">
+        <Link href="/classement" className="card-hard px-[14px] pb-[14px] pt-[13px]">
           <GeoMark shape="ring" color="#1E6499" />
           {user.role === 'admin' ? (
             <>
@@ -177,9 +177,9 @@ export default async function DashboardPage() {
               <div className="mt-1 text-[11px] font-semibold text-ink-3">sur {rank.total} joueurs</div>
             </>
           )}
-        </div>
+        </Link>
 
-        <div className="card-hard px-[14px] pb-[14px] pt-[13px]">
+        <Link href="/bataille" className="card-hard px-[14px] pb-[14px] pt-[13px]">
           <GeoMark shape="square" />
           <div className="mt-[10px] font-disp text-[34px] leading-[0.9] tracking-disp">
             {battleStats.total}
@@ -192,7 +192,7 @@ export default async function DashboardPage() {
             <span className="text-ink-3"> · </span>
             <span className="text-fail">{battleStats.losses} D</span>
           </div>
-        </div>
+        </Link>
       </section>
 
       <div className="min-h-[20px] flex-1" />
@@ -217,7 +217,7 @@ export default async function DashboardPage() {
         </Link>
         <Link
           href="/bataille"
-          className="relative flex h-[52px] items-center justify-center gap-2 border-[3px] border-ink bg-card font-disp text-[15px] uppercase tracking-disp shadow-hard"
+          className="relative flex h-[52px] items-center justify-center gap-2 border-[3px] border-ink bg-brand text-cream font-disp text-[15px] uppercase tracking-disp shadow-hard"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
             <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" />

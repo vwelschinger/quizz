@@ -32,6 +32,7 @@ interface Contestation {
   prompt: string;
   correctAnswer: string;
   chosenAnswer: string;
+  battleId: number | null;
 }
 
 function Plus() {
@@ -248,7 +249,14 @@ export default function AdminConsole() {
           <div className="flex flex-col gap-3">
             {contestations.map((c) => (
               <div key={c.id} className="border border-admin-border p-3">
-                <div className="mb-2 text-[12px] font-bold text-cream">⚑ Demande de {c.username}</div>
+                <div className="mb-2 text-[12px] font-bold text-cream">
+                  ⚑ Demande de {c.username}
+                  {c.battleId != null && (
+                    <span className="ml-2 rounded bg-[#3a4a5a] px-[6px] py-[1px] text-[10px] font-bold uppercase tracking-wide text-[#cfe0f0]">
+                      bataille
+                    </span>
+                  )}
+                </div>
                 <div className="text-[13px] text-[#c7bda8]">{c.prompt}</div>
                 <div className="mt-2 text-[12px]">
                   <span className="text-[#79705f]">Bonne réponse :</span>{' '}
