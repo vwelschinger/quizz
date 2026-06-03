@@ -91,6 +91,19 @@ export default function QuizRunner() {
     loadNext(0);
   }, [loadNext]);
 
+  // Entrée pendant le feedback → question suivante (en saisie, l'input gère déjà Entrée → Valider).
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Enter' && phase === 'feedback') {
+        e.preventDefault();
+        next();
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
   async function validate() {
     if (!question || !value.trim()) return;
     setPhase('loading');
