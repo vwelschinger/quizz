@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth/session';
 import { listBattlesForUser, type BattleSummary } from '@/lib/db/battles';
+import { listOpponents } from '@/lib/db/users';
 import CreateBattleForm from './CreateBattleForm';
 
 export const dynamic = 'force-dynamic';
@@ -56,6 +57,7 @@ export default async function BattlePage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
   const battles = await listBattlesForUser(user.id);
+  const opponents = await listOpponents(user.id);
   const toPlay = battles.filter((b) => b.status === 'waiting' && !b.myPlayed);
   const waiting = battles.filter((b) => b.status === 'waiting' && b.myPlayed);
   const finished = battles.filter((b) => b.status === 'finished');
@@ -72,7 +74,7 @@ export default async function BattlePage() {
         <h1 className="font-disp text-[40px] uppercase leading-[0.9] tracking-disp">Bataille</h1>
       </header>
 
-      <CreateBattleForm />
+      <CreateBattleForm opponents={opponents} />
 
       {toPlay.length > 0 && (
         <Section title={`À toi de jouer · ${toPlay.length}`}>
