@@ -25,3 +25,7 @@ npm-debug.log*
 *.tsbuildinfo
 .DS_Store
 Thumbs.db
+
+# archives de deploiement
+*.tgz
+sanity.sql
