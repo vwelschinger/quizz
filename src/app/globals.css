@@ -268,16 +268,40 @@
     padding: 6px 11px 4px;
     border: 2px solid var(--ink);
   }
-  .diff-badge--high {
-    background: var(--blue-deep);
-    color: var(--cream);
-  }
-  .diff-badge--middle {
+  /* Code couleur de difficulté sur l'échelle affichée 1-6 (cf. difficultyRank). */
+  .diff-badge--lvl0 {
+    /* difficulté inconnue (taux communautaire absent) */
     background: var(--blue);
     color: var(--cream);
   }
-  .diff-badge--low {
+  .diff-badge--lvl1 {
+    /* Très Facile — vert clair */
+    background: #8ed98f;
+    color: var(--ink);
+  }
+  .diff-badge--lvl2 {
+    /* Facile — vert */
     background: var(--success);
+    color: var(--cream);
+  }
+  .diff-badge--lvl3 {
+    /* Moyenne — jaune */
+    background: #f2c40d;
+    color: var(--ink);
+  }
+  .diff-badge--lvl4 {
+    /* Difficile — orange */
+    background: #e2782a;
+    color: var(--cream);
+  }
+  .diff-badge--lvl5 {
+    /* Très Difficile — rouge */
+    background: var(--fail);
+    color: var(--cream);
+  }
+  .diff-badge--lvl6 {
+    /* Démoniaque — violet foncé */
+    background: #4a1d6e;
     color: var(--cream);
   }
   .quiz-q-mark {

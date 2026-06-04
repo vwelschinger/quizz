@@ -7,6 +7,7 @@ import { createBattle } from '@/lib/db/battles';
 const schema = z.object({
   opponent: z.string().trim().min(1),
   size: z.number().int().min(1).max(10).optional(),
+  theme: z.string().trim().min(1).optional(),
 });
 
 export async function POST(req: Request) {
@@ -23,10 +24,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Tu ne peux pas te défier toi-même' }, { status: 400 });
   }
 
-  const battle = await createBattle(user.id, opponent.id, parsed.data.size ?? 5, user.username);
+  const battle = await createBattle(
+    user.id,
+    opponent.id,
+    parsed.data.size ?? 10,
+    user.username,
+    parsed.data.theme ?? null,
+  );
   if (!battle) {
     return NextResponse.json(
-      { error: 'Pas assez de questions disponibles pour une bataille (lance une synchro).' },
+      {
+        error: parsed.data.theme
+          ? `Pas assez de questions disponibles pour le thème « ${parsed.data.theme} ».`
+          : 'Pas assez de questions disponibles pour une bataille (lance une synchro).',
+      },
       { status: 409 },
     );
   }

@@ -26,7 +26,22 @@ const ZERO: UserBadgeStats = {
   themeMastered: false,
   nightOwl: false,
   weekendWarrior: false,
+  themes: [],
 };
+
+// Tous les thèmes maîtrisés au niveau or → débloque les 30 badges de thème + les 6 multi-thèmes.
+const ALL_THEMES_MASTERED = [
+  'Animaux et plantes',
+  'Classique',
+  'Culture générale',
+  'Géographie',
+  'Histoire',
+  'Jeux-vidéo / Culture Web',
+  'Moderne',
+  'Musiques',
+  'Sciences',
+  'Sport',
+].map((theme) => ({ theme, answered: 100, correct: 100, successRate: 100 }));
 
 describe('catalogue des badges', () => {
   it('a des identifiants uniques', () => {
@@ -66,6 +81,7 @@ describe('catalogue des badges', () => {
       themeMastered: true,
       nightOwl: true,
       weekendWarrior: true,
+      themes: ALL_THEMES_MASTERED,
     };
     // « ça arrive » exige une mauvaise réponse (answered - correct >= 1), absente ici.
     expect(BADGES.filter((b) => !b.test(HIGH)).map((b) => b.id)).toEqual(['ca-arrive']);

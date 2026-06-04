@@ -1,6 +1,8 @@
 // Catalogue des badges. L'`id` = nom du fichier SVG (public/badge-icons/<id>.svg) ET clé en base.
 // Le `tier` reflète la couleur d'anneau du visuel (bronze / argent / or).
 
+import { THEME_BADGES, MULTI_THEME_BADGES } from './themeBadges';
+
 export type BadgeTier = 'bronze' | 'argent' | 'or';
 
 export const BADGE_FAMILIES = [
@@ -11,8 +13,17 @@ export const BADGE_FAMILIES = [
   'Bataille',
   'Communauté',
   'Régularité',
+  'Thème',
 ] as const;
 export type BadgeFamily = (typeof BADGE_FAMILIES)[number];
+
+// Stat d'un thème pour un joueur (forme identique à la sortie de getThemeBreakdown).
+export interface ThemeStat {
+  theme: string; // libellé EXACT de questions.theme (clé de jointure)
+  answered: number; // nb de réponses du joueur dans ce thème
+  correct: number; // nb de bonnes réponses
+  successRate: number; // 0–100 (pourcentage, pas 0–1)
+}
 
 export interface UserBadgeStats {
   answered: number;
@@ -39,6 +50,7 @@ export interface UserBadgeStats {
   themeMastered: boolean; // ≥ 15 bonnes réponses dans un même thème
   nightOwl: boolean; // a répondu entre 00 h et 05 h
   weekendWarrior: boolean; // a répondu un week-end
+  themes: ThemeStat[]; // récap par thème — alimente les badges de thème
 }
 
 export interface BadgeDef {
@@ -114,6 +126,10 @@ export const BADGES: BadgeDef[] = [
   { id: 'oiseau-de-nuit', name: 'Oiseau de nuit', family: 'Régularité', tier: 'argent', description: 'Répondre à une question entre minuit et 5 h', test: (s) => s.nightOwl },
   { id: 'guerrier-du-weekend', name: 'Guerrier du week-end', family: 'Régularité', tier: 'argent', description: 'Répondre à une question un week-end', test: (s) => s.weekendWarrior },
   { id: 'pilier', name: 'Pilier', family: 'Régularité', tier: 'or', description: 'Jouer sur 30 jours différents', test: (s) => s.distinctDays >= 30 },
+
+  // ── Thème (30 badges) + multi-thèmes (6) — générés dans themeBadges.ts ──
+  ...THEME_BADGES,
+  ...MULTI_THEME_BADGES,
 ];
 
 export const BADGE_COUNT = BADGES.length;

@@ -1,0 +1,14 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <polygon points="438.0,268.0 353.0,415.2 183.0,415.2 98.0,268.0 183.0,120.8 353.0,120.8" fill="#1A1611"></polygon>
+  <polygon points="426.0,256.0 341.0,403.2 171.0,403.2 86.0,256.0 171.0,108.8 341.0,108.8" fill="#1A1611"></polygon>
+  <polygon points="412.0,256.0 334.0,391.1 178.0,391.1 100.0,256.0 178.0,120.9 334.0,120.9" fill="#9AA1A8"></polygon>
+  <polygon points="382.0,256.0 319.0,365.1 193.0,365.1 130.0,256.0 193.0,146.9 319.0,146.9" fill="#1A1611"></polygon>
+  <polygon points="373.0,256.0 314.5,357.3 197.5,357.3 139.0,256.0 197.5,154.7 314.5,154.7" fill="#F2ECDD"></polygon>
+  <rect x="238.0" y="370" width="15" height="15" fill="#1A1611"></rect><rect x="259.0" y="370" width="15" height="15" fill="#1A1611"></rect>
+  
+  <rect x="196" y="158" width="120" height="196" rx="20" fill="#1A1611"></rect>
+  <rect x="210" y="186" width="92" height="120" fill="#F2ECDD"></rect>
+  <circle cx="256" cy="330" r="9" fill="#F2ECDD"></circle>
+  <rect x="226" y="206" width="60" height="9" fill="#1A1611"></rect><rect x="226" y="228" width="48" height="9" fill="#1A1611"></rect><rect x="226" y="250" width="56" height="9" fill="#1A1611"></rect>
+  <circle cx="320" cy="170" r="26" fill="#CC2E1E"></circle>
+</svg>

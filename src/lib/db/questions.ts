@@ -65,10 +65,12 @@ export function getQuestionById(id: number): Promise<QuestionRow | null> {
  * Prochaine question NON répondue pour l'utilisateur — "scaffolding progressif" :
  * on prend les 12 questions dont l'ELO est le plus proche de celui du joueur,
  * puis une au hasard parmi elles (variété + adéquation au niveau).
+ * Si `theme` est fourni, on restreint la sélection à ce thème (session à thème).
  */
 export function pickNextQuestionForUser(
   userId: number,
   playerElo: number,
+  theme?: string | null,
 ): Promise<QuestionRow | null> {
   return queryOne<QuestionRow>(
     `SELECT * FROM (
@@ -76,18 +78,36 @@ export function pickNextQuestionForUser(
        WHERE NOT EXISTS (
          SELECT 1 FROM answers a WHERE a.user_id = $1 AND a.question_id = q.id
        )
+       AND ($3::text IS NULL OR q.theme = $3)
        ORDER BY abs(q.question_elo - $2) ASC
        LIMIT 12
      ) candidates
      ORDER BY random()
      LIMIT 1`,
-    [userId, playerElo],
+    [userId, playerElo, theme ?? null],
   );
 }
 
 export async function countQuestions(): Promise<number> {
   const row = await queryOne<{ count: number }>('SELECT count(*)::int AS count FROM questions');
   return row?.count ?? 0;
+}
+
+export interface ThemeInfo {
+  theme: string;
+  total: number; // nombre de questions du thème
+}
+
+/** Liste des thèmes existants (texte libre synchronisé), avec le nombre de questions. */
+export async function listThemes(): Promise<ThemeInfo[]> {
+  const rows = await query<{ theme: string; total: number }>(
+    `SELECT theme, count(*)::int AS total
+       FROM questions
+      WHERE theme IS NOT NULL AND theme <> ''
+      GROUP BY theme
+      ORDER BY total DESC, theme ASC`,
+  );
+  return rows.map((r) => ({ theme: r.theme, total: r.total }));
 }
 
 export interface PublicQuestion {

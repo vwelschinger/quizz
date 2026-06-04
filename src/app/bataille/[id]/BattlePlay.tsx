@@ -5,6 +5,7 @@ import Link from 'next/link';
 import BattleReview from '../BattleReview';
 import BadgeCelebration, { type UnlockedBadge } from '../../BadgeCelebration';
 import type { BattleQuestionReview } from '@/lib/db/battles';
+import { difficultyRank } from '@/lib/quiz/scoring';
 
 interface PublicQuestion {
   id: number;
@@ -35,14 +36,12 @@ function Frame({ children }: { children: React.ReactNode }) {
     </main>
   );
 }
-function diffClass(d: PublicQuestion['difficulty']): string {
-  if (d === 'high') return 'diff-badge--high';
-  if (d === 'low') return 'diff-badge--low';
-  return 'diff-badge--middle';
+function diffClass(q: PublicQuestion): string {
+  if (!q.difficulty) return 'diff-badge--lvl0';
+  return `diff-badge--lvl${difficultyRank(q.category, q.difficulty)}`;
 }
 function badge(q: PublicQuestion): string {
-  const c = q.category === 'expert' ? 'EXPERT' : 'ABORDABLE';
-  return q.difficulty ? `${c} · ${q.difficulty.toUpperCase()}` : c;
+  return q.label;
 }
 
 export default function BattlePlay({
@@ -115,6 +114,11 @@ export default function BattlePlay({
             >
               {win ? 'Victoire' : draw ? 'Match nul' : 'Défaite'}
             </div>
+            {win && (
+              <div className="mt-1 text-[12px] font-extrabold uppercase tracking-[0.18em] text-success">
+                Groovy !
+              </div>
+            )}
             <div className="mt-3 font-disp text-[44px] leading-none tracking-disp">
               {result.score} – {result.opponentScore}
             </div>
@@ -191,7 +195,7 @@ export default function BattlePlay({
           <span className="quiz-count">
             {idx + 1} / {total}
           </span>
-          <span className={`diff-badge ${diffClass(q.difficulty)}`}>{badge(q)}</span>
+          <span className={`diff-badge ${diffClass(q)}`}>{badge(q)}</span>
         </div>
       </div>
 

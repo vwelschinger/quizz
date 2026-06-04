@@ -37,19 +37,24 @@ async function publicQuestionsByIds(ids: number[]): Promise<PublicQuestion[]> {
     .map(toPublicQuestion);
 }
 
-/** Choisit N questions qu'aucun des deux joueurs n'a vues en solo (fraîcheur + équité). */
+/**
+ * Choisit N questions qu'aucun des deux joueurs n'a vues en solo (fraîcheur + équité).
+ * Si `theme` est fourni, restreint la sélection à ce thème (bataille à thème).
+ */
 export async function pickBattleQuestionIds(
   challengerId: number,
   opponentId: number,
   size: number,
+  theme?: string | null,
 ): Promise<number[]> {
   const rows = await query<{ id: number }>(
     `SELECT id FROM questions q
      WHERE NOT EXISTS (
        SELECT 1 FROM answers a WHERE a.question_id = q.id AND a.user_id IN ($1, $2)
      )
+     AND ($4::text IS NULL OR q.theme = $4)
      ORDER BY random() LIMIT $3`,
-    [challengerId, opponentId, size],
+    [challengerId, opponentId, size, theme ?? null],
   );
   return rows.map((r) => r.id);
 }
@@ -57,10 +62,11 @@ export async function pickBattleQuestionIds(
 export async function createBattle(
   challengerId: number,
   opponentId: number,
-  size = 5,
+  size = 10,
   challengerName?: string,
+  theme?: string | null,
 ): Promise<{ id: number } | null> {
-  const questionIds = await pickBattleQuestionIds(challengerId, opponentId, size);
+  const questionIds = await pickBattleQuestionIds(challengerId, opponentId, size, theme);
   if (questionIds.length === 0) return null;
   const row = await queryOne<{ id: number }>(
     `INSERT INTO battles (challenger_id, opponent_id, question_ids)
@@ -286,20 +292,26 @@ export async function countPendingBattlesForUser(userId: number): Promise<number
   return row?.count ?? 0;
 }
 
-/** Bilan batailles du joueur : total terminées, victoires, défaites. */
+/** Bilan batailles du joueur : total terminées, victoires, défaites, matchs nuls. */
 export async function getBattleStatsForUser(
   userId: number,
-): Promise<{ total: number; wins: number; losses: number }> {
-  const row = await queryOne<{ total: number; wins: number; losses: number }>(
+): Promise<{ total: number; wins: number; losses: number; draws: number }> {
+  const row = await queryOne<{ total: number; wins: number; losses: number; draws: number }>(
     `SELECT
        (count(*) FILTER (WHERE status = 'finished'))::int AS total,
        (count(*) FILTER (WHERE status = 'finished' AND winner_id = $1))::int AS wins,
-       (count(*) FILTER (WHERE status = 'finished' AND winner_id IS NOT NULL AND winner_id <> $1))::int AS losses
+       (count(*) FILTER (WHERE status = 'finished' AND winner_id IS NOT NULL AND winner_id <> $1))::int AS losses,
+       (count(*) FILTER (WHERE status = 'finished' AND winner_id IS NULL))::int AS draws
      FROM battles
      WHERE challenger_id = $1 OR opponent_id = $1`,
     [userId],
   );
-  return { total: row?.total ?? 0, wins: row?.wins ?? 0, losses: row?.losses ?? 0 };
+  return {
+    total: row?.total ?? 0,
+    wins: row?.wins ?? 0,
+    losses: row?.losses ?? 0,
+    draws: row?.draws ?? 0,
+  };
 }
 
 export interface BattleQuestionReview {

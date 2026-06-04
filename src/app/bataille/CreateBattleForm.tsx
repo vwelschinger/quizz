@@ -11,7 +11,7 @@ interface Opponent {
 export default function CreateBattleForm({ opponents }: { opponents: Opponent[] }) {
   const router = useRouter();
   const [opponent, setOpponent] = useState('');
-  const [size, setSize] = useState(5);
+  const [size, setSize] = useState(10);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 

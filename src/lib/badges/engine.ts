@@ -1,5 +1,5 @@
 import { query, queryOne, withTransaction } from '@/lib/db/pool';
-import { getDailyStreak } from '@/lib/db/answers';
+import { getDailyStreak, getThemeBreakdown } from '@/lib/db/answers';
 import { BADGES, type BadgeDef, type UserBadgeStats } from './catalog';
 
 function longestRun<T>(rows: T[], pred: (t: T) => boolean): number {
@@ -32,6 +32,7 @@ export async function getUserBadgeStats(userId: number): Promise<UserBadgeStats>
     correctRows,
     battleRows,
     daily,
+    themeBreakdown,
   ] = await Promise.all([
     queryOne<{ answered: number; correct: number }>(
       'SELECT count(*)::int AS answered, coalesce(sum((is_correct)::int),0)::int AS correct FROM answers WHERE user_id=$1',
@@ -108,6 +109,7 @@ export async function getUserBadgeStats(userId: number): Promise<UserBadgeStats>
       [userId],
     ),
     getDailyStreak(userId),
+    getThemeBreakdown(userId),
   ]);
 
   const answered = base?.answered ?? 0;
@@ -138,6 +140,12 @@ export async function getUserBadgeStats(userId: number): Promise<UserBadgeStats>
     themeMastered: theme?.mastered ?? false,
     nightOwl: timeFlags?.night ?? false,
     weekendWarrior: timeFlags?.weekend ?? false,
+    themes: themeBreakdown.map((r) => ({
+      theme: r.theme,
+      answered: Number(r.answered),
+      correct: Number(r.correct),
+      successRate: Number(r.successRate),
+    })),
   };
 }
 

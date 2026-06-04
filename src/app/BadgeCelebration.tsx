@@ -80,7 +80,7 @@ export default function BadgeCelebration({
         )}
 
         <button onClick={next} className="cta-primary mt-5">
-          {isLast ? 'Super !' : 'Badge suivant →'}
+          {isLast ? 'Groovy !' : 'Badge suivant →'}
         </button>
       </div>
     </div>

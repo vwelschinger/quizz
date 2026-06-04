@@ -11,6 +11,15 @@ export interface LeaderboardEntry {
 
 /** Classement des joueurs (role user) par ELO décroissant, avec volume, % de réussite et badges. */
 export function getLeaderboard(limit = 100): Promise<LeaderboardEntry[]> {
+  return boardForRole('user', limit);
+}
+
+/** Comptes admin : affichés « hors classement » en bas du classement. */
+export function getAdminBoard(limit = 100): Promise<LeaderboardEntry[]> {
+  return boardForRole('admin', limit);
+}
+
+function boardForRole(role: 'user' | 'admin', limit: number): Promise<LeaderboardEntry[]> {
   return query<LeaderboardEntry>(
     `SELECT u.id,
             u.username,
@@ -20,11 +29,11 @@ export function getLeaderboard(limit = 100): Promise<LeaderboardEntry[]> {
             (SELECT count(*) FROM user_badges ub WHERE ub.user_id = u.id)::int AS badges
      FROM users u
      LEFT JOIN answers a ON a.user_id = u.id
-     WHERE u.role = 'user'
+     WHERE u.role = $2
      GROUP BY u.id
      ORDER BY u.elo DESC, answered DESC, u.username ASC
      LIMIT $1`,
-    [limit],
+    [limit, role],
   );
 }
 

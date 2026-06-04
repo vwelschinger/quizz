@@ -11,37 +11,9 @@ import { playerTier } from '@/lib/quiz/tier';
 import EmojiAvatar from './EmojiAvatar';
 import LogoutButton from './LogoutButton';
 import NotificationMenu from './NotificationMenu';
+import { GeoMark } from './GeoMark';
 
 export const dynamic = 'force-dynamic';
-
-type Shape = 'square' | 'ring' | 'tri' | 'star';
-
-// Icônes géométriques pleines (iconographie constructiviste).
-function GeoMark({ shape, color = '#1A1611', size = 16 }: { shape: Shape; color?: string; size?: number }) {
-  if (shape === 'square')
-    return (
-      <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
-        <rect x="2" y="2" width="12" height="12" fill={color} />
-      </svg>
-    );
-  if (shape === 'ring')
-    return (
-      <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
-        <circle cx="8" cy="8" r="6" fill="none" stroke={color} strokeWidth="3" />
-      </svg>
-    );
-  if (shape === 'tri')
-    return (
-      <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
-        <path d="M8 1l7 13H1z" fill={color} />
-      </svg>
-    );
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
-      <path d="M8 0l2.2 5.8L16 8l-5.8 2.2L8 16l-2.2-5.8L0 8l5.8-2.2z" fill={color} />
-    </svg>
-  );
-}
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -154,61 +126,61 @@ export default async function DashboardPage() {
 
       {/* ── Grille de stats (compacte) ── */}
       <section className="grid grid-cols-2 auto-rows-fr gap-[12px]">
-        <div className="card-hard px-[12px] pb-[10px] pt-[9px]">
+        <div className="card-hard px-[12px] pb-[7px] pt-[6px]">
           <GeoMark shape="square" size={13} />
-          <div className="mt-[7px] font-disp text-[26px] leading-[0.9] tracking-disp">{stats.answered}</div>
-          <div className="mt-[5px] text-[10.5px] font-bold uppercase leading-[1.15] tracking-[0.03em] text-ink-2">
+          <div className="mt-[4px] font-disp text-[22px] leading-[0.9] tracking-disp">{stats.answered}</div>
+          <div className="mt-[3px] text-[10.5px] font-bold uppercase leading-[1.15] tracking-[0.03em] text-ink-2">
             Questions répondues
           </div>
         </div>
 
-        <div className="card-hard px-[12px] pb-[10px] pt-[9px]">
+        <div className="card-hard px-[12px] pb-[7px] pt-[6px]">
           <GeoMark shape="ring" size={13} />
-          <div className="mt-[7px] font-disp text-[26px] leading-[0.9] tracking-disp">
+          <div className="mt-[4px] font-disp text-[22px] leading-[0.9] tracking-disp">
             {stats.successRate}
             <span className="text-[16px] text-brand">%</span>
           </div>
-          <div className="mt-[5px] text-[10.5px] font-bold uppercase leading-[1.15] tracking-[0.03em] text-ink-2">
+          <div className="mt-[3px] text-[10.5px] font-bold uppercase leading-[1.15] tracking-[0.03em] text-ink-2">
             Taux de réussite
           </div>
         </div>
 
         <Link
           href="/badges"
-          className="border-[3px] border-ink bg-ink px-[12px] pb-[10px] pt-[9px] shadow-hard-blue"
+          className="border-[3px] border-ink bg-ink px-[12px] pb-[7px] pt-[6px] shadow-hard-blue"
         >
           <GeoMark shape="star" color="#1E6499" size={13} />
-          <div className="mt-[7px] font-disp text-[26px] leading-[0.9] tracking-disp text-cream">
+          <div className="mt-[4px] font-disp text-[22px] leading-[0.9] tracking-disp text-cream">
             {badgeCount}
             <span className="text-[15px] text-[#9aa1a8]">/{BADGE_COUNT}</span>
           </div>
-          <div className="mt-[5px] text-[10.5px] font-bold uppercase leading-[1.15] tracking-[0.03em] text-ink-3">
+          <div className="mt-[3px] text-[10.5px] font-bold uppercase leading-[1.15] tracking-[0.03em] text-ink-3">
             Badges
           </div>
         </Link>
 
-        <div className="card-hard px-[12px] pb-[10px] pt-[9px]">
+        <div className="card-hard px-[12px] pb-[7px] pt-[6px]">
           <GeoMark shape="star" color="#1E6499" size={13} />
-          <div className="mt-[7px] font-disp text-[26px] leading-[0.9] tracking-disp">{streak}</div>
-          <div className="mt-[5px] text-[10.5px] font-bold uppercase leading-[1.15] tracking-[0.03em] text-ink-2">
+          <div className="mt-[4px] font-disp text-[22px] leading-[0.9] tracking-disp">{streak}</div>
+          <div className="mt-[3px] text-[10.5px] font-bold uppercase leading-[1.15] tracking-[0.03em] text-ink-2">
             Bonnes d&apos;affilée
           </div>
         </div>
 
-        <Link href="/classement" className="card-hard px-[12px] pb-[10px] pt-[9px]">
+        <Link href="/classement" className="card-hard px-[12px] pb-[7px] pt-[6px]">
           <GeoMark shape="ring" color="#1E6499" size={13} />
           {user.role === 'admin' ? (
             <>
-              <div className="mt-[7px] font-disp text-[26px] leading-[0.9] tracking-disp">—</div>
-              <div className="mt-[5px] text-[10.5px] font-bold uppercase leading-[1.15] tracking-[0.03em] text-ink-2">
+              <div className="mt-[4px] font-disp text-[22px] leading-[0.9] tracking-disp">—</div>
+              <div className="mt-[3px] text-[10.5px] font-bold uppercase leading-[1.15] tracking-[0.03em] text-ink-2">
                 Classement
               </div>
               <div className="mt-[2px] text-[10px] font-semibold text-ink-3">Admin (hors classement)</div>
             </>
           ) : (
             <>
-              <div className="mt-[7px] font-disp text-[26px] leading-[0.9] tracking-disp">#{rank.rank}</div>
-              <div className="mt-[5px] text-[10.5px] font-bold uppercase leading-[1.15] tracking-[0.03em] text-ink-2">
+              <div className="mt-[4px] font-disp text-[22px] leading-[0.9] tracking-disp">#{rank.rank}</div>
+              <div className="mt-[3px] text-[10.5px] font-bold uppercase leading-[1.15] tracking-[0.03em] text-ink-2">
                 Classement
               </div>
               <div className="mt-[2px] text-[10px] font-semibold text-ink-3">sur {rank.total} joueurs</div>
@@ -216,16 +188,18 @@ export default async function DashboardPage() {
           )}
         </Link>
 
-        <Link href="/bataille" className="card-hard px-[12px] pb-[10px] pt-[9px]">
+        <Link href="/bataille" className="card-hard px-[12px] pb-[7px] pt-[6px]">
           <GeoMark shape="square" size={13} />
-          <div className="mt-[7px] font-disp text-[26px] leading-[0.9] tracking-disp">
+          <div className="mt-[4px] font-disp text-[22px] leading-[0.9] tracking-disp">
             {battleStats.total}
           </div>
-          <div className="mt-[5px] text-[10.5px] font-bold uppercase leading-[1.15] tracking-[0.03em] text-ink-2">
+          <div className="mt-[3px] text-[10.5px] font-bold uppercase leading-[1.15] tracking-[0.03em] text-ink-2">
             Batailles
           </div>
           <div className="mt-[2px] text-[10px] font-bold">
             <span className="text-success">{battleStats.wins} V</span>
+            <span className="text-ink-3"> · </span>
+            <span className="text-ink-2">{battleStats.draws} N</span>
             <span className="text-ink-3"> · </span>
             <span className="text-fail">{battleStats.losses} D</span>
           </div>
@@ -244,13 +218,16 @@ export default async function DashboardPage() {
 
       <div className="mt-3 grid grid-cols-2 gap-3">
         <Link
-          href="/classement"
+          href="/themes"
           className="flex h-[52px] items-center justify-center gap-2 border-[3px] border-ink bg-card font-disp text-[15px] uppercase tracking-disp shadow-hard"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M4 20V10M12 20V4M20 20v-6" />
+            <rect x="3" y="3" width="7" height="7" />
+            <rect x="14" y="3" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" />
+            <rect x="14" y="14" width="7" height="7" />
           </svg>
-          Classement
+          Thème
         </Link>
         <Link
           href="/bataille"
@@ -268,16 +245,27 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      <Link
-        href="/stats"
-        className="mt-3 flex h-[52px] items-center justify-center gap-2 border-[3px] border-ink bg-card font-disp text-[15px] uppercase tracking-disp shadow-hard"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-          <path d="M3 3v18h18" />
-          <path d="M7 13l3.5-3.5 3 3L19 6" />
-        </svg>
-        Mes stats
-      </Link>
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <Link
+          href="/classement"
+          className="flex h-[52px] items-center justify-center gap-2 border-[3px] border-ink bg-card font-disp text-[15px] uppercase tracking-disp shadow-hard"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M4 20V10M12 20V4M20 20v-6" />
+          </svg>
+          Classement
+        </Link>
+        <Link
+          href="/stats"
+          className="flex h-[52px] items-center justify-center gap-2 border-[3px] border-ink bg-card font-disp text-[15px] uppercase tracking-disp shadow-hard"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M3 3v18h18" />
+            <path d="M7 13l3.5-3.5 3 3L19 6" />
+          </svg>
+          Mes stats
+        </Link>
+      </div>
 
       {totalQuestions === 0 && (
         <p className="mt-3 text-center text-[12px] font-semibold text-brand-deep">

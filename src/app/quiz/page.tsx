@@ -4,8 +4,13 @@ import QuizRunner from './QuizRunner';
 
 export const dynamic = 'force-dynamic';
 
-export default async function QuizPage() {
+export default async function QuizPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ theme?: string }>;
+}) {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
-  return <QuizRunner />;
+  const { theme } = await searchParams;
+  return <QuizRunner theme={theme?.trim() || null} />;
 }

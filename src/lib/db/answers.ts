@@ -199,6 +199,83 @@ export interface EloHistoryRow {
   isCorrect: boolean;
 }
 
+export interface ThemeBreakdownRow {
+  theme: string;
+  answered: number;
+  correct: number;
+  successRate: number; // %
+}
+
+/** Réussite du joueur ventilée par thème (pour la fiche joueur). */
+export async function getThemeBreakdown(userId: number): Promise<ThemeBreakdownRow[]> {
+  const rows = await query<{ theme: string; answered: number; correct: number }>(
+    `SELECT q.theme,
+            count(*)::int AS answered,
+            coalesce(sum((a.is_correct)::int), 0)::int AS correct
+       FROM answers a
+       JOIN questions q ON q.id = a.question_id
+      WHERE a.user_id = $1 AND q.theme IS NOT NULL AND q.theme <> ''
+      GROUP BY q.theme
+      ORDER BY answered DESC, q.theme ASC`,
+    [userId],
+  );
+  return rows.map((r) => ({
+    theme: r.theme,
+    answered: r.answered,
+    correct: r.correct,
+    successRate: r.answered > 0 ? Math.round((r.correct / r.answered) * 100) : 0,
+  }));
+}
+
+export interface AnsweredQuestionRow {
+  questionId: number;
+  prompt: string;
+  theme: string | null;
+  isCorrect: boolean;
+  eloDelta: number;
+  chosenAnswer: string | null;
+  correctAnswer: string;
+  answeredAt: string;
+}
+
+/** Liste des questions auxquelles le joueur a répondu, plus récentes d'abord (fiche joueur). */
+export async function listAnsweredQuestions(
+  userId: number,
+  limit = 100,
+): Promise<AnsweredQuestionRow[]> {
+  const rows = await query<{
+    questionId: number;
+    prompt: string;
+    theme: string | null;
+    isCorrect: boolean;
+    eloDelta: number;
+    chosenAnswer: string | null;
+    correctAnswer: string;
+    answeredAt: Date;
+  }>(
+    `SELECT a.question_id AS "questionId", q.prompt, q.theme,
+            a.is_correct AS "isCorrect", a.elo_delta AS "eloDelta",
+            a.chosen_answer AS "chosenAnswer", q.correct_answer AS "correctAnswer",
+            a.answered_at AS "answeredAt"
+       FROM answers a
+       JOIN questions q ON q.id = a.question_id
+      WHERE a.user_id = $1
+      ORDER BY a.answered_at DESC
+      LIMIT $2`,
+    [userId, limit],
+  );
+  return rows.map((r) => ({
+    questionId: r.questionId,
+    prompt: r.prompt,
+    theme: r.theme,
+    isCorrect: r.isCorrect,
+    eloDelta: r.eloDelta,
+    chosenAnswer: r.chosenAnswer,
+    correctAnswer: r.correctAnswer,
+    answeredAt: r.answeredAt.toISOString(),
+  }));
+}
+
 /** Historique ELO du joueur, par ordre chronologique (pour le graphe + la liste des stats). */
 export function getEloHistory(userId: number): Promise<EloHistoryRow[]> {
   return query<EloHistoryRow>(

@@ -19,9 +19,13 @@ describe('bonusPoints', () => {
 });
 
 describe('labels', () => {
-  it('formate "Catégorie - Difficulté"', () => {
-    expect(questionLabel('expert', 'high')).toBe('Expert - High');
-    expect(questionLabel('abordable', 'low')).toBe('Abordable - Low');
+  it('mappe la combinaison catégorie + difficulté sur l’échelle 1-6', () => {
+    expect(questionLabel('abordable', 'low')).toBe('Très Facile - 1/6');
+    expect(questionLabel('abordable', 'middle')).toBe('Facile - 2/6');
+    expect(questionLabel('abordable', 'high')).toBe('Moyenne - 3/6');
+    expect(questionLabel('expert', 'low')).toBe('Difficile - 4/6');
+    expect(questionLabel('expert', 'middle')).toBe('Très Difficile - 5/6');
+    expect(questionLabel('expert', 'high')).toBe('Démoniaque - 6/6');
   });
 
   it('expose les labels unitaires', () => {

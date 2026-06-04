@@ -5,6 +5,7 @@ import Link from 'next/link';
 import EloFeedback from './EloFeedback';
 import SessionRecap, { type RecapEntry } from './SessionRecap';
 import BadgeCelebration, { type UnlockedBadge } from '../BadgeCelebration';
+import { difficultyRank } from '@/lib/quiz/scoring';
 
 interface PublicQuestion {
   id: number;
@@ -31,15 +32,13 @@ interface AnswerResult {
 const SESSION_SIZE = 10;
 type Phase = 'loading' | 'question' | 'feedback' | 'recap' | 'empty' | 'error';
 
-function diffClass(d: PublicQuestion['difficulty']): string {
-  if (d === 'high') return 'diff-badge--high';
-  if (d === 'low') return 'diff-badge--low';
-  return 'diff-badge--middle';
+function diffClass(q: PublicQuestion): string {
+  if (!q.difficulty) return 'diff-badge--lvl0';
+  return `diff-badge--lvl${difficultyRank(q.category, q.difficulty)}`;
 }
 
 function badgeText(q: PublicQuestion): string {
-  const cat = q.category === 'expert' ? 'EXPERT' : 'ABORDABLE';
-  return q.difficulty ? `${cat} · ${q.difficulty.toUpperCase()}` : cat;
+  return q.label;
 }
 
 function Frame({ children }: { children: React.ReactNode }) {
@@ -50,7 +49,7 @@ function Frame({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function QuizRunner() {
+export default function QuizRunner({ theme }: { theme?: string | null }) {
   const [phase, setPhase] = useState<Phase>('loading');
   const [question, setQuestion] = useState<PublicQuestion | null>(null);
   const [value, setValue] = useState('');
@@ -70,7 +69,8 @@ export default function QuizRunner() {
     setValue('');
     setContest('idle');
     try {
-      const res = await fetch('/api/quiz/next');
+      const url = theme ? `/api/quiz/next?theme=${encodeURIComponent(theme)}` : '/api/quiz/next';
+      const res = await fetch(url);
       if (!res.ok) {
         setMessage('Impossible de charger la question.');
         setPhase('error');
@@ -87,7 +87,7 @@ export default function QuizRunner() {
       setMessage('Erreur réseau.');
       setPhase('error');
     }
-  }, []);
+  }, [theme]);
 
   useEffect(() => {
     loadNext(0);
@@ -191,8 +191,15 @@ export default function QuizRunner() {
             <>
               <p className="font-disp text-[22px] uppercase tracking-disp">Aucune question</p>
               <p className="mt-2 text-[13px] text-ink-2">
-                Lance une synchro depuis la console admin pour importer les quiz.
+                {theme
+                  ? `Tu as déjà répondu à toutes les questions du thème « ${theme} ».`
+                  : 'Lance une synchro depuis la console admin pour importer les quiz.'}
               </p>
+              {theme && (
+                <Link href="/themes" className="cta-primary mt-4">
+                  Choisir un autre thème
+                </Link>
+              )}
             </>
           ) : (
             <>
@@ -216,10 +223,15 @@ export default function QuizRunner() {
       {celebration.length > 0 && (
         <BadgeCelebration badges={celebration} onClose={() => setCelebration([])} />
       )}
-      <div className="mb-3">
+      <div className="mb-3 flex items-center justify-between gap-2">
         <Link href="/" className="text-[12px] font-semibold text-ink-2 underline">
           ← Tableau de bord
         </Link>
+        {theme && (
+          <span className="border-[2px] border-ink bg-brand-soft px-2 py-[2px] font-disp text-[12px] uppercase tracking-disp">
+            {theme}
+          </span>
+        )}
       </div>
 
       <div className="quiz-top">
@@ -233,7 +245,7 @@ export default function QuizRunner() {
             {currentN} / {SESSION_SIZE}
           </span>
           {question && (
-            <span className={`diff-badge ${diffClass(question.difficulty)}`}>{badgeText(question)}</span>
+            <span className={`diff-badge ${diffClass(question)}`}>{badgeText(question)}</span>
           )}
         </div>
       </div>

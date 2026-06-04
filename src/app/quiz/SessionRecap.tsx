@@ -31,7 +31,9 @@ export default function SessionRecap({
   return (
     <div>
       <header className="corr-head">
-        <div className="corr-eyebrow">SESSION TERMINÉE</div>
+        <div className="corr-eyebrow">
+          {okCount === total && total > 0 ? 'GROOVY — SANS FAUTE !' : 'SESSION TERMINÉE'}
+        </div>
         <div className="corr-title">CORRECTION</div>
       </header>
 

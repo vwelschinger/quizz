@@ -1,0 +1,14 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <polygon points="438.0,268.0 353.0,415.2 183.0,415.2 98.0,268.0 183.0,120.8 353.0,120.8" fill="#1A1611"></polygon>
+  <polygon points="426.0,256.0 341.0,403.2 171.0,403.2 86.0,256.0 171.0,108.8 341.0,108.8" fill="#1A1611"></polygon>
+  <polygon points="412.0,256.0 334.0,391.1 178.0,391.1 100.0,256.0 178.0,120.9 334.0,120.9" fill="#D9A93C"></polygon>
+  <polygon points="382.0,256.0 319.0,365.1 193.0,365.1 130.0,256.0 193.0,146.9 319.0,146.9" fill="#1A1611"></polygon>
+  <polygon points="373.0,256.0 314.5,357.3 197.5,357.3 139.0,256.0 197.5,154.7 314.5,154.7" fill="#F2ECDD"></polygon>
+  <rect x="227.5" y="370" width="15" height="15" fill="#1A1611"></rect><rect x="248.5" y="370" width="15" height="15" fill="#1A1611"></rect><rect x="269.5" y="370" width="15" height="15" fill="#1A1611"></rect>
+  
+  <line x1="150" y1="338" x2="362" y2="338" stroke="#1A1611" stroke-width="12" stroke-linecap="round"></line>
+  <line x1="148" y1="270" x2="364" y2="270" stroke="#1A1611" stroke-width="11" stroke-linecap="round"></line>
+  <circle cx="256" cy="178" r="24" fill="#1A1611"></circle>
+  <path d="M256 202 L256 300 M256 300 L232 338 M256 300 L280 338 M256 240 L256 270" fill="none" stroke="#1A1611" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"></path>
+  <circle cx="148" cy="270" r="13" fill="#1E6499"></circle><circle cx="364" cy="270" r="13" fill="#1E6499"></circle>
+</svg>

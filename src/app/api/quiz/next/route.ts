@@ -6,11 +6,12 @@ import {
   countQuestions,
 } from '@/lib/db/questions';
 
-export async function GET() {
+export async function GET(req: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
 
-  const row = await pickNextQuestionForUser(user.id, user.elo);
+  const theme = new URL(req.url).searchParams.get('theme')?.trim() || null;
+  const row = await pickNextQuestionForUser(user.id, user.elo, theme);
   if (!row) {
     const total = await countQuestions();
     // exhausted=true : il y a des questions mais l'utilisateur a tout répondu.
