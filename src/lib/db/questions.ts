@@ -79,6 +79,12 @@ export function pickNextQuestionForUser(
        WHERE NOT EXISTS (
          SELECT 1 FROM answers a WHERE a.user_id = $1 AND a.question_id = q.id
        )
+       -- jamais une question déjà servie au joueur en bataille (jouée ou en attente)
+       AND NOT EXISTS (
+         SELECT 1 FROM battles b
+         WHERE (b.challenger_id = $1 OR b.opponent_id = $1)
+           AND b.question_ids @> to_jsonb(q.id)
+       )
        AND ($3::text IS NULL OR q.theme = $3)
        AND ($4::text IS NULL OR q.category = $4)
        AND ($5::text IS NULL OR q.difficulty = $5)

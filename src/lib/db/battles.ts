@@ -52,6 +52,12 @@ export async function pickBattleQuestionIds(
      WHERE NOT EXISTS (
        SELECT 1 FROM answers a WHERE a.question_id = q.id AND a.user_id IN ($1, $2)
      )
+     -- ni une question déjà servie à l'un des deux joueurs dans une autre bataille
+     AND NOT EXISTS (
+       SELECT 1 FROM battles b
+       WHERE (b.challenger_id IN ($1, $2) OR b.opponent_id IN ($1, $2))
+         AND b.question_ids @> to_jsonb(q.id)
+     )
      AND ($4::text IS NULL OR q.theme = $4)
      ORDER BY random() LIMIT $3`,
     [challengerId, opponentId, size, theme ?? null],
