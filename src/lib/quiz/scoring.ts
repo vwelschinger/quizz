@@ -63,3 +63,26 @@ const QUESTION_RANK: Record<Category, Record<Difficulty, number>> = {
 export function difficultyRank(category: Category, difficulty: Difficulty): number {
   return QUESTION_RANK[category][difficulty];
 }
+
+export interface DifficultyLevel {
+  rank: number; // 1 à 6
+  category: Category;
+  difficulty: Difficulty;
+  label: string; // ex : "Démoniaque - 6/6"
+}
+
+/** Les 6 niveaux de difficulté affichés, du plus facile au plus dur (pour le mode « par difficulté »). */
+export const DIFFICULTY_LEVELS: DifficultyLevel[] = (['abordable', 'expert'] as Category[]).flatMap(
+  (category) =>
+    (['low', 'middle', 'high'] as Difficulty[]).map((difficulty) => ({
+      rank: difficultyRank(category, difficulty),
+      category,
+      difficulty,
+      label: questionLabel(category, difficulty),
+    })),
+);
+
+/** Inverse de difficultyRank : retrouve (catégorie, difficulté) à partir d'un rang 1-6. */
+export function levelFromRank(rank: number): DifficultyLevel | undefined {
+  return DIFFICULTY_LEVELS.find((l) => l.rank === rank);
+}

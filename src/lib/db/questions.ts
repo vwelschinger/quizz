@@ -65,12 +65,13 @@ export function getQuestionById(id: number): Promise<QuestionRow | null> {
  * Prochaine question NON répondue pour l'utilisateur — "scaffolding progressif" :
  * on prend les 12 questions dont l'ELO est le plus proche de celui du joueur,
  * puis une au hasard parmi elles (variété + adéquation au niveau).
- * Si `theme` est fourni, on restreint la sélection à ce thème (session à thème).
+ * `filters` restreint éventuellement à un thème (session à thème) et/ou à une
+ * catégorie + difficulté (mode par difficulté).
  */
 export function pickNextQuestionForUser(
   userId: number,
   playerElo: number,
-  theme?: string | null,
+  filters: { theme?: string | null; category?: Category | null; difficulty?: Difficulty | null } = {},
 ): Promise<QuestionRow | null> {
   return queryOne<QuestionRow>(
     `SELECT * FROM (
@@ -79,12 +80,14 @@ export function pickNextQuestionForUser(
          SELECT 1 FROM answers a WHERE a.user_id = $1 AND a.question_id = q.id
        )
        AND ($3::text IS NULL OR q.theme = $3)
+       AND ($4::text IS NULL OR q.category = $4)
+       AND ($5::text IS NULL OR q.difficulty = $5)
        ORDER BY abs(q.question_elo - $2) ASC
        LIMIT 12
      ) candidates
      ORDER BY random()
      LIMIT 1`,
-    [userId, playerElo, theme ?? null],
+    [userId, playerElo, filters.theme ?? null, filters.category ?? null, filters.difficulty ?? null],
   );
 }
 

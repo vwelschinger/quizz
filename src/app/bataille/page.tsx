@@ -100,7 +100,9 @@ export default async function BattlePage() {
       </div>
       <header className="mb-5">
         <div className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-brand-deep">Duel</div>
-        <h1 className="font-disp text-[40px] uppercase leading-[0.9] tracking-disp">Bataille</h1>
+        <h1 className="font-disp text-[34px] uppercase leading-[0.9] tracking-disp">
+          Affronter un Joueur
+        </h1>
       </header>
 
       <CreateBattleForm opponents={opponents} />

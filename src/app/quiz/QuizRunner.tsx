@@ -5,7 +5,10 @@ import Link from 'next/link';
 import EloFeedback from './EloFeedback';
 import SessionRecap, { type RecapEntry } from './SessionRecap';
 import BadgeCelebration, { type UnlockedBadge } from '../BadgeCelebration';
-import { difficultyRank } from '@/lib/quiz/scoring';
+import { difficultyRank, questionLabel } from '@/lib/quiz/scoring';
+
+type Category = 'abordable' | 'expert';
+type Difficulty = 'low' | 'middle' | 'high';
 
 interface PublicQuestion {
   id: number;
@@ -49,7 +52,20 @@ function Frame({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function QuizRunner({ theme }: { theme?: string | null }) {
+export default function QuizRunner({
+  theme,
+  category,
+  difficulty,
+}: {
+  theme?: string | null;
+  category?: Category | null;
+  difficulty?: Difficulty | null;
+}) {
+  // Libellé + couleur du filtre actif (mode par difficulté).
+  const levelActive = !!(category && difficulty);
+  const levelLabel = levelActive ? questionLabel(category!, difficulty!) : null;
+  const levelClass = levelActive ? `diff-badge--lvl${difficultyRank(category!, difficulty!)}` : '';
+
   const [phase, setPhase] = useState<Phase>('loading');
   const [question, setQuestion] = useState<PublicQuestion | null>(null);
   const [value, setValue] = useState('');
@@ -69,7 +85,13 @@ export default function QuizRunner({ theme }: { theme?: string | null }) {
     setValue('');
     setContest('idle');
     try {
-      const url = theme ? `/api/quiz/next?theme=${encodeURIComponent(theme)}` : '/api/quiz/next';
+      const qs = new URLSearchParams();
+      if (theme) qs.set('theme', theme);
+      if (category && difficulty) {
+        qs.set('category', category);
+        qs.set('difficulty', difficulty);
+      }
+      const url = qs.toString() ? `/api/quiz/next?${qs.toString()}` : '/api/quiz/next';
       const res = await fetch(url);
       if (!res.ok) {
         setMessage('Impossible de charger la question.');
@@ -87,7 +109,7 @@ export default function QuizRunner({ theme }: { theme?: string | null }) {
       setMessage('Erreur réseau.');
       setPhase('error');
     }
-  }, [theme]);
+  }, [theme, category, difficulty]);
 
   useEffect(() => {
     loadNext(0);
@@ -193,11 +215,18 @@ export default function QuizRunner({ theme }: { theme?: string | null }) {
               <p className="mt-2 text-[13px] text-ink-2">
                 {theme
                   ? `Tu as déjà répondu à toutes les questions du thème « ${theme} ».`
-                  : 'Lance une synchro depuis la console admin pour importer les quiz.'}
+                  : levelActive
+                    ? `Tu as déjà répondu à toutes les questions « ${levelLabel} ».`
+                    : 'Lance une synchro depuis la console admin pour importer les quiz.'}
               </p>
               {theme && (
                 <Link href="/themes" className="cta-primary mt-4">
                   Choisir un autre thème
+                </Link>
+              )}
+              {levelActive && (
+                <Link href="/difficulte" className="cta-primary mt-4">
+                  Choisir une autre difficulté
                 </Link>
               )}
             </>
@@ -231,6 +260,9 @@ export default function QuizRunner({ theme }: { theme?: string | null }) {
           <span className="border-[2px] border-ink bg-brand-soft px-2 py-[2px] font-disp text-[12px] uppercase tracking-disp">
             {theme}
           </span>
+        )}
+        {levelLabel && (
+          <span className={`diff-badge ${levelClass}`}>{levelLabel}</span>
         )}
       </div>
 

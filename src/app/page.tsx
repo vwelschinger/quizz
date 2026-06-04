@@ -230,20 +230,30 @@ export default async function DashboardPage() {
           Thème
         </Link>
         <Link
-          href="/bataille"
-          className="relative flex h-[52px] items-center justify-center gap-2 border-[3px] border-ink bg-ink text-cream font-disp text-[15px] uppercase tracking-disp shadow-hard-blue"
+          href="/difficulte"
+          className="flex h-[52px] items-center justify-center gap-2 border-[3px] border-ink bg-card font-disp text-[15px] uppercase tracking-disp shadow-hard"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-            <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" />
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M4 20V14M12 20V8M20 20v-9" />
           </svg>
-          Bataille
-          {pendingBattles > 0 && (
-            <span className="absolute -right-2 -top-2 flex h-6 min-w-[24px] items-center justify-center rounded-full border-2 border-paper bg-fail px-1 font-sans text-[12px] font-bold leading-none text-white">
-              {pendingBattles}
-            </span>
-          )}
+          Difficulté
         </Link>
       </div>
+
+      <Link
+        href="/bataille"
+        className="relative mt-3 flex h-[52px] items-center justify-center gap-2 border-[3px] border-ink bg-ink text-cream font-disp text-[15px] uppercase tracking-disp shadow-hard-blue"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+          <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" />
+        </svg>
+        Affronter un Joueur
+        {pendingBattles > 0 && (
+          <span className="absolute -right-2 -top-2 flex h-6 min-w-[24px] items-center justify-center rounded-full border-2 border-paper bg-fail px-1 font-sans text-[12px] font-bold leading-none text-white">
+            {pendingBattles}
+          </span>
+        )}
+      </Link>
 
       <div className="mt-3 grid grid-cols-2 gap-3">
         <Link

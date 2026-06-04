@@ -15,19 +15,14 @@ export default function CreateBattleForm({ opponents }: { opponents: Opponent[] 
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!opponent) {
-      setError('Choisis un adversaire.');
-      return;
-    }
+  async function launch(opponentName: string) {
     setError(null);
     setLoading(true);
     try {
       const res = await fetch('/api/battles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ opponent, size }),
+        body: JSON.stringify({ opponent: opponentName, size }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -40,6 +35,22 @@ export default function CreateBattleForm({ opponents }: { opponents: Opponent[] 
     } finally {
       setLoading(false);
     }
+  }
+
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!opponent) {
+      setError('Choisis un adversaire.');
+      return;
+    }
+    launch(opponent);
+  }
+
+  function challengeRandom() {
+    if (opponents.length === 0) return;
+    const pick = opponents[Math.floor(Math.random() * opponents.length)];
+    setOpponent(pick.username);
+    launch(pick.username);
   }
 
   return (
@@ -84,6 +95,14 @@ export default function CreateBattleForm({ opponents }: { opponents: Opponent[] 
           {error && <p className="mt-2 text-[13px] font-semibold text-fail">{error}</p>}
           <button type="submit" disabled={loading} className="cta-primary mt-3">
             {loading ? '…' : 'Lancer le défi'}
+          </button>
+          <button
+            type="button"
+            onClick={challengeRandom}
+            disabled={loading}
+            className="mt-2 flex h-[48px] w-full items-center justify-center gap-2 border-[3px] border-ink bg-card font-disp text-[14px] uppercase tracking-disp shadow-hard disabled:opacity-60"
+          >
+            🎲 Adversaire aléatoire
           </button>
         </>
       )}
