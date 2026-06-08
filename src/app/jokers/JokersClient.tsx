@@ -6,6 +6,7 @@ import {
   JOKER_CATEGORIES,
   JOKER_CONSTANTS,
   jokerPrice,
+  nextJokerPrice,
   getJoker,
   type JokerDef,
 } from '@/lib/jokers/catalog';
@@ -30,12 +31,15 @@ function JokerIcon({ id, size = 44 }: { id: string; size?: number }) {
 export default function JokersClient({
   initialBalance,
   initialInventory,
+  initialPurchases,
 }: {
   initialBalance: number;
   initialInventory: Inv;
+  initialPurchases: Inv;
 }) {
   const [balance, setBalance] = useState(initialBalance);
   const [inv, setInv] = useState<Inv>(initialInventory);
+  const [purchases, setPurchases] = useState<Inv>(initialPurchases);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,6 +63,9 @@ export default function JokersClient({
         for (const j of data.jokers as { joker_id: string; qty: number }[]) m[j.joker_id] = j.qty;
         setInv(m);
       }
+      if (data.purchases && typeof data.purchases === 'object') {
+        setPurchases(data.purchases as Inv);
+      }
     } catch {
       setError('Erreur réseau');
     } finally {
@@ -74,7 +81,8 @@ export default function JokersClient({
   const ownedConsumables = consumables.filter((j) => (inv[j.id] ?? 0) > 0);
 
   function ConsumableCard({ def }: { def: JokerDef }) {
-    const price = jokerPrice(def)!;
+    const bought = purchases[def.id] ?? 0;
+    const price = nextJokerPrice(jokerPrice(def)!, bought);
     const qty = inv[def.id] ?? 0;
     const key = `buy:${def.id}`;
     return (
@@ -90,6 +98,7 @@ export default function JokersClient({
             <span className="font-disp text-[15px] tracking-disp">
               {price.toLocaleString('fr-FR')}
               <span className="ml-1 text-[10px] font-bold uppercase text-ink-3">bonus</span>
+              {bought > 0 && <span className="ml-1 text-[10px] font-bold uppercase text-ink-3">(+30%/achat)</span>}
               {qty > 0 && <span className="ml-2 text-[11px] font-bold text-brand-deep">×{qty} en stock</span>}
             </span>
             <button

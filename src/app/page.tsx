@@ -236,6 +236,16 @@ export default async function DashboardPage() {
         Lancer une session
       </Link>
 
+      <Link
+        href="/jokers"
+        className="mt-3 flex h-[52px] items-center justify-center gap-2 border-[3px] border-ink bg-card font-disp text-[15px] uppercase tracking-disp shadow-hard"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinejoin="round" aria-hidden>
+          <path d="M8 2h8l6 6v8l-6 6H8l-6-6V8z" />
+        </svg>
+        Mes Jokers
+      </Link>
+
       <div className="mt-3 grid grid-cols-2 gap-3">
         <Link
           href="/themes"

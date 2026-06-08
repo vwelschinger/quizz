@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth/session';
-import { getBonusBalance, getUserJokers } from '@/lib/jokers/ledger';
+import { getBonusBalance, getUserJokers, getJokerPurchaseCounts } from '@/lib/jokers/ledger';
 import JokersIntro from '../JokersIntro';
 import JokersClient from './JokersClient';
 
@@ -11,7 +11,11 @@ export default async function JokersPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
 
-  const [balance, owned] = await Promise.all([getBonusBalance(user.id), getUserJokers(user.id)]);
+  const [balance, owned, purchases] = await Promise.all([
+    getBonusBalance(user.id),
+    getUserJokers(user.id),
+    getJokerPurchaseCounts(user.id),
+  ]);
   const inventory: Record<string, number> = {};
   for (const j of owned) inventory[j.joker_id] = j.qty;
 
@@ -33,7 +37,11 @@ export default async function JokersPage() {
         <JokersIntro withButton />
       </header>
 
-      <JokersClient initialBalance={balance} initialInventory={inventory} />
+      <JokersClient
+        initialBalance={balance}
+        initialInventory={inventory}
+        initialPurchases={purchases}
+      />
     </main>
   );
 }

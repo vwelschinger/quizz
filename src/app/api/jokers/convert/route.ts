@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getCurrentUser } from '@/lib/auth/session';
 import { balleDansLePied, recyclage } from '@/lib/jokers/engine';
-import { getBonusBalance, getUserJokers } from '@/lib/jokers/ledger';
+import { getBonusBalance, getUserJokers, getJokerPurchaseCounts } from '@/lib/jokers/ledger';
 
 const schema = z.object({
   type: z.union([z.literal('balle'), z.literal('recyclage')]),
@@ -31,6 +31,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
-  const [balance, jokers] = await Promise.all([getBonusBalance(user.id), getUserJokers(user.id)]);
-  return NextResponse.json({ balance, jokers });
+  const [balance, jokers, purchases] = await Promise.all([
+    getBonusBalance(user.id),
+    getUserJokers(user.id),
+    getJokerPurchaseCounts(user.id),
+  ]);
+  return NextResponse.json({ balance, jokers, purchases });
 }

@@ -15,8 +15,11 @@ export interface JokerDef {
   price: number | null; // coût de base en bonus (null pour les conversions)
 }
 
-/** Facteur global sur la grille de prix (1 = grille de la spec). Ajustable pour rendre les jokers plus rares/fréquents. */
+/** Facteur global sur la grille de prix (1 = grille de base). Ajustable pour rendre les jokers plus rares/fréquents. */
 export const JOKER_PRICE_FACTOR = 1;
+
+/** Hausse de prix à chaque achat d'un même joker par un joueur (+30 %, composé). */
+export const JOKER_PRICE_GROWTH = 1.3;
 
 /** Constantes des conversions (cf. spec §4.2). */
 export const JOKER_CONSTANTS = {
@@ -42,7 +45,7 @@ export const JOKERS: JokerDef[] = [
     category: 'defensif',
     scope: 'solo',
     kind: 'consumable',
-    price: 1200,
+    price: 120,
   },
   {
     id: 'gilet-pare-balles',
@@ -52,7 +55,7 @@ export const JOKERS: JokerDef[] = [
     category: 'defensif',
     scope: 'solo',
     kind: 'consumable',
-    price: 2500,
+    price: 250,
   },
   {
     id: 'cafeine',
@@ -62,7 +65,7 @@ export const JOKERS: JokerDef[] = [
     category: 'offensif',
     scope: 'solo',
     kind: 'consumable',
-    price: 3000,
+    price: 300,
   },
   {
     id: 'seconde-chance',
@@ -72,7 +75,7 @@ export const JOKERS: JokerDef[] = [
     category: 'defensif',
     scope: 'solo',
     kind: 'consumable',
-    price: 3500,
+    price: 350,
   },
   {
     id: 'fourbe',
@@ -81,7 +84,7 @@ export const JOKERS: JokerDef[] = [
     category: 'offensif',
     scope: 'battle',
     kind: 'consumable',
-    price: 4500,
+    price: 450,
   },
   {
     id: 'dopage',
@@ -91,7 +94,7 @@ export const JOKERS: JokerDef[] = [
     category: 'offensif',
     scope: 'solo',
     kind: 'consumable',
-    price: 6000,
+    price: 600,
   },
 
   // ───────── Conversions (actions instantanées, pas d'inventaire) ─────────
@@ -120,7 +123,17 @@ export function getJoker(id: string): JokerDef | undefined {
   return JOKERS.find((j) => j.id === id);
 }
 
-/** Prix effectif d'un joker (après facteur global). `null` pour les conversions. */
+/** Prix de BASE d'un joker (1er achat, après facteur global). `null` pour les conversions. */
 export function jokerPrice(def: JokerDef): number | null {
   return def.price == null ? null : Math.round(def.price * JOKER_PRICE_FACTOR);
+}
+
+/**
+ * Prix du PROCHAIN achat d'un joker pour un joueur, en fonction du nombre d'achats déjà effectués
+ * (`purchased`). +30 % composé par achat, arrondi à la dizaine inférieure.
+ * Ex. base 1000 → 1000, 1300, 1690, 2190, …
+ */
+export function nextJokerPrice(basePrice: number, purchased: number): number {
+  const raw = basePrice * Math.pow(JOKER_PRICE_GROWTH, Math.max(0, purchased));
+  return Math.floor(raw / 10) * 10;
 }

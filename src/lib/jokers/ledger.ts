@@ -15,6 +15,7 @@ export type BonusReason =
 export interface JokerInventoryRow {
   joker_id: string;
   qty: number;
+  purchased: number; // nb d'achats déjà effectués (pour le prix progressif) ; ne diminue jamais
 }
 
 /** Solde dépensable d'un joueur. À utiliser partout où on affiche/débite des points bonus. */
@@ -52,9 +53,23 @@ export async function postBonus(
 /** Inventaire des jokers possédés (qty > 0) d'un joueur. */
 export async function getUserJokers(userId: number): Promise<JokerInventoryRow[]> {
   return query<JokerInventoryRow>(
-    'SELECT joker_id, qty FROM user_jokers WHERE user_id = $1 AND qty > 0',
+    'SELECT joker_id, qty, purchased FROM user_jokers WHERE user_id = $1 AND qty > 0',
     [userId],
   );
+}
+
+/**
+ * Compteurs d'achats par joker (même à qty=0), pour calculer le prix progressif côté UI.
+ * Renvoie une map { joker_id: purchased } pour les jokers déjà achetés au moins une fois.
+ */
+export async function getJokerPurchaseCounts(userId: number): Promise<Record<string, number>> {
+  const rows = await query<{ joker_id: string; purchased: number }>(
+    'SELECT joker_id, purchased FROM user_jokers WHERE user_id = $1 AND purchased > 0',
+    [userId],
+  );
+  const map: Record<string, number> = {};
+  for (const r of rows) map[r.joker_id] = r.purchased;
+  return map;
 }
 
 /** Quantité possédée d'un joker précis (0 si aucun). */

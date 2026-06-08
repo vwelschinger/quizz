@@ -3,6 +3,7 @@ import { withTransaction } from '@/lib/db/pool';
 import {
   getJoker,
   jokerPrice,
+  nextJokerPrice,
   JOKER_CONSTANTS,
   type JokerScope,
 } from './catalog';
@@ -59,18 +60,28 @@ export function isJokerUsableInScope(jokerId: string | null, scope: JokerScope):
 
 // ───────────────────────────────── Couche d'accès base ─────────────────────────────────
 
-/** Achat d'un joker consommable : vérifie le solde, débite, incrémente l'inventaire (transaction atomique). */
+/**
+ * Achat d'un joker consommable. Le prix croît de 30 % à chaque achat de ce joker par ce joueur
+ * (`nextJokerPrice(base, purchased)`). Transaction atomique : verrou ligne, débit, +1 qty, +1 purchased.
+ */
 export async function purchaseJoker(userId: number, jokerId: string): Promise<void> {
   const def = getJoker(jokerId);
   if (!def || def.kind !== 'consumable' || def.price == null) throw new Error('joker invalide');
-  const price = jokerPrice(def)!;
+  const base = jokerPrice(def)!;
   await withTransaction(async (client) => {
+    const owned = await client.query<{ purchased: number }>(
+      'SELECT purchased FROM user_jokers WHERE user_id = $1 AND joker_id = $2 FOR UPDATE',
+      [userId, jokerId],
+    );
+    const purchased = owned.rows[0]?.purchased ?? 0;
+    const price = nextJokerPrice(base, purchased);
     const balance = await getBonusBalanceTx(client, userId);
     if (balance < price) throw new Error('solde insuffisant');
     await postBonus(client, userId, -price, 'joker_purchase', { type: 'joker', id: 0 });
     await client.query(
-      `INSERT INTO user_jokers (user_id, joker_id, qty) VALUES ($1, $2, 1)
-       ON CONFLICT (user_id, joker_id) DO UPDATE SET qty = user_jokers.qty + 1`,
+      `INSERT INTO user_jokers (user_id, joker_id, qty, purchased) VALUES ($1, $2, 1, 1)
+       ON CONFLICT (user_id, joker_id)
+       DO UPDATE SET qty = user_jokers.qty + 1, purchased = user_jokers.purchased + 1`,
       [userId, jokerId],
     );
   });
