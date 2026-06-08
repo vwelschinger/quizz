@@ -13,6 +13,7 @@ import { playerTier } from '@/lib/quiz/tier';
 import WalletHeader from './WalletHeader';
 import JokersIntro from './JokersIntro';
 import Mascotte from '@/components/Mascotte';
+import BobBubble from '@/components/BobBubble';
 import LogoutButton from './LogoutButton';
 import NotificationMenu from './NotificationMenu';
 import { GeoMark } from './GeoMark';
@@ -71,10 +72,6 @@ export default async function DashboardPage() {
 
       {!seenJokersIntro && <JokersIntro autoOpen />}
 
-      <div className="mb-4 flex justify-center">
-        <Mascotte size={104} />
-      </div>
-
       {/* ── Bloc ELO héros ── */}
       <section className="relative mb-[18px] overflow-hidden border-[3px] border-ink bg-elo-grad px-5 pb-5 pt-[18px] text-cream shadow-hard-lg">
         <div
@@ -120,6 +117,12 @@ export default async function DashboardPage() {
               <div className="h-full bg-cream" style={{ width: `${tier.progress}%` }} />
             </div>
             <span className="font-disp text-[14px] tracking-disp">{tier.next ?? 'MAX'}</span>
+          </div>
+
+          {/* Encart blanc : Bob + sa bulle d'accueil */}
+          <div className="mt-4 flex items-end gap-2 border-[3px] border-ink bg-cream px-3 pt-3 pb-8 text-ink shadow-hard">
+            <BobBubble tail="right">Salut Camarade, je suis Bob le Ragondin</BobBubble>
+            <Mascotte size={84} />
           </div>
         </div>
       </section>
