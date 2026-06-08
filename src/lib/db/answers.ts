@@ -1,8 +1,12 @@
 import { withTransaction, query, queryOne } from './pool';
 import type { QuestionRow } from './types';
-import { updatePlayerElo } from '@/lib/quiz/elo';
+import { expectedScore } from '@/lib/quiz/elo';
+import { QUIZ_CONFIG } from '@/lib/quiz/config';
 import { bonusPoints } from '@/lib/quiz/scoring';
 import { isAnswerCorrect } from '@/lib/quiz/answer';
+import { getJoker } from '@/lib/jokers/catalog';
+import { consumeJoker, applyJokerToVariation, applyJokerToBonus } from '@/lib/jokers/engine';
+import { postBonus } from '@/lib/jokers/ledger';
 
 export interface AnswerResult {
   isCorrect: boolean;
@@ -13,6 +17,15 @@ export interface AnswerResult {
   eloDelta: number;
   bonusPoints: number;
   alreadyAnswered: boolean;
+  /** Esquive : la question a été passée, aucune ligne `answers` écrite. */
+  skipped?: boolean;
+  /** Seconde chance : 1re réponse fausse, 2e essai attendu (la bonne réponse n'est PAS révélée). */
+  retry?: boolean;
+}
+
+export interface SubmitAnswerOptions {
+  jokerId?: string | null;
+  attempt?: number; // 2 = 2e essai de « Seconde chance »
 }
 
 /**
@@ -24,7 +37,10 @@ export async function submitAnswer(
   userId: number,
   questionId: number,
   chosenAnswer: string,
+  opts: SubmitAnswerOptions = {},
 ): Promise<AnswerResult | null> {
+  const rawJoker = opts.jokerId ?? null;
+  const attempt = opts.attempt ?? 1;
   return withTransaction(async (client) => {
     const userRes = await client.query<{ elo: number }>(
       'SELECT elo FROM users WHERE id = $1 FOR UPDATE',
@@ -71,35 +87,94 @@ export async function submitAnswer(
       ? (question.accepted_answers as string[])
       : [question.correct_answer];
     const correct = isAnswerCorrect(accepted, chosenAnswer);
-    const outcome = updatePlayerElo(user.elo, question.question_elo, correct);
-    const bonus = bonusPoints(rate, correct);
 
-    await client.query(
+    // Joker valide pour le solo (consommable, scope solo). qty vérifiée au moment de la consommation.
+    const jokerDef = rawJoker ? getJoker(rawJoker) : null;
+    const validSolo = !!jokerDef && jokerDef.kind === 'consumable' && jokerDef.scope === 'solo';
+    const secondTry = rawJoker === 'seconde-chance' && attempt === 2;
+
+    const neutral = (extra: Partial<AnswerResult>): AnswerResult => ({
+      isCorrect: false,
+      correctAnswer: '', // on ne révèle PAS la réponse (skip / retry)
+      explanation: null,
+      eloBefore: user.elo,
+      eloAfter: user.elo,
+      eloDelta: 0,
+      bonusPoints: 0,
+      alreadyAnswered: false,
+      ...extra,
+    });
+
+    // ── Esquive : passe la question, aucune ligne `answers`, aucun impact ──
+    if (validSolo && rawJoker === 'esquive' && !secondTry) {
+      const consumed = await consumeJoker(client, userId, 'esquive');
+      if (consumed) return neutral({ skipped: true });
+      // pas le joker en stock → on retombe sur une réponse normale
+    }
+
+    // `activeJoker` = joker dont l'effet s'applique réellement au calcul (après consommation).
+    let activeJoker: string | null = null;
+
+    if (validSolo && rawJoker !== 'esquive') {
+      if (rawJoker === 'seconde-chance') {
+        if (secondTry) {
+          // passe 2 : joker déjà consommé en passe 1, on applique l'effet ½ / plein
+          activeJoker = 'seconde-chance';
+        } else if (!correct) {
+          // passe 1 fausse : ne rien écrire, consommer, demander un 2e essai
+          const consumed = await consumeJoker(client, userId, 'seconde-chance');
+          if (consumed) return neutral({ retry: true });
+          // pas le joker → réponse normale (fausse, perte pleine)
+        }
+        // passe 1 juste : joker rendu (non consommé), effet normal plein → activeJoker reste null
+      } else if (rawJoker === 'gilet-pare-balles') {
+        if (!correct) {
+          const consumed = await consumeJoker(client, userId, 'gilet-pare-balles');
+          activeJoker = consumed ? 'gilet-pare-balles' : null;
+        }
+        // juste : gilet rendu, aucun effet
+      } else if (rawJoker === 'cafeine' || rawJoker === 'dopage') {
+        const consumed = await consumeJoker(client, userId, rawJoker);
+        activeJoker = consumed ? rawJoker : null;
+      }
+    }
+
+    // Variation d'ELO et bonus, après effet joker (arrondi APRÈS multiplication, cf. engine).
+    const rawDelta = QUIZ_CONFIG.kFactor * ((correct ? 1 : 0) - expectedScore(user.elo, question.question_elo));
+    let delta: number;
+    let bonus: number;
+    if (secondTry) {
+      // 2e essai : gain ×½ si juste, perte pleine si faux ; bonus ×½ si juste.
+      delta = correct ? Math.round(0.5 * rawDelta) : Math.round(rawDelta);
+      bonus = applyJokerToBonus(bonusPoints(rate, correct), 'seconde-chance', true);
+    } else {
+      delta = applyJokerToVariation(rawDelta, activeJoker);
+      bonus = applyJokerToBonus(bonusPoints(rate, correct), activeJoker, false);
+    }
+    const eloAfter = user.elo + delta;
+
+    const insertRes = await client.query<{ id: number }>(
       `INSERT INTO answers
          (user_id, question_id, is_correct, chosen_answer, elo_before, elo_after,
           elo_delta, question_elo, bonus_points)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [
-        userId,
-        questionId,
-        correct,
-        chosenAnswer,
-        outcome.playerEloBefore,
-        outcome.playerEloAfter,
-        outcome.delta,
-        question.question_elo,
-        bonus,
-      ],
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING id`,
+      [userId, questionId, correct, chosenAnswer, user.elo, eloAfter, delta, question.question_elo, bonus],
     );
-    await client.query('UPDATE users SET elo = $1 WHERE id = $2', [outcome.playerEloAfter, userId]);
+    await client.query('UPDATE users SET elo = $1 WHERE id = $2', [eloAfter, userId]);
+
+    // Crédit du solde dépensable (ledger) pour une bonne réponse — miroir de answers.bonus_points.
+    if (bonus > 0) {
+      await postBonus(client, userId, bonus, 'solo_answer', { type: 'answer', id: insertRes.rows[0].id });
+    }
 
     return {
       isCorrect: correct,
       correctAnswer: question.correct_answer,
       explanation: question.explanation,
-      eloBefore: outcome.playerEloBefore,
-      eloAfter: outcome.playerEloAfter,
-      eloDelta: outcome.delta,
+      eloBefore: user.elo,
+      eloAfter,
+      eloDelta: delta,
       bonusPoints: bonus,
       alreadyAnswered: false,
     };

@@ -45,3 +45,12 @@ export async function deleteUser(id: number): Promise<void> {
 export async function updateUserElo(id: number, elo: number): Promise<void> {
   await query('UPDATE users SET elo = $1 WHERE id = $2', [elo, id]);
 }
+
+/** A-t-il déjà vu la popup d'intro des jokers ? (drapeau persistant, multi-appareils). */
+export async function hasSeenJokersIntro(id: number): Promise<boolean> {
+  const row = await queryOne<{ seen_jokers_intro: boolean }>(
+    'SELECT seen_jokers_intro FROM users WHERE id = $1',
+    [id],
+  );
+  return row?.seen_jokers_intro ?? false;
+}

@@ -1,0 +1,11 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <polygon points="451.1,347.0 345.0,453.1 195.0,453.1 88.9,347.0 88.9,197.0 195.0,90.9 345.0,90.9 451.1,197.0" fill="#1A1611"></polygon>
+  <polygon points="437.1,331.0 331.0,437.1 181.0,437.1 74.9,331.0 74.9,181.0 181.0,74.9 331.0,74.9 437.1,181.0" fill="#1A1611"></polygon>
+  <polygon points="422.3,324.9 324.9,422.3 187.1,422.3 89.7,324.9 89.7,187.1 187.1,89.7 324.9,89.7 422.3,187.1" fill="#F2ECDD"></polygon>
+  <polygon points="413.1,321.1 321.1,413.1 190.9,413.1 98.9,321.1 98.9,190.9 190.9,98.9 321.1,98.9 413.1,190.9" fill="#1E6499"></polygon>
+  
+  <rect x="236" y="232" width="48" height="48" fill="#1A1611"></rect>
+  <path d="M168 320 Q168 200 300 200" fill="none" stroke="#1A1611" stroke-width="26" stroke-linecap="round"></path>
+  <polygon points="300,176 348,200 300,224" fill="#1A1611"></polygon>
+  <rect x="150" y="306" width="40" height="40" fill="#1A1611"></rect>
+</svg>

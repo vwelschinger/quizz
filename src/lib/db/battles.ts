@@ -3,6 +3,8 @@ import { toPublicQuestion, type PublicQuestion } from './questions';
 import type { QuestionRow } from './types';
 import { isAnswerCorrect } from '@/lib/quiz/answer';
 import { battleEloOutcome } from '@/lib/quiz/battleElo';
+import { getJoker } from '@/lib/jokers/catalog';
+import { consumeJoker, effectiveBattleScore } from '@/lib/jokers/engine';
 
 interface BattleRow {
   id: number;
@@ -115,6 +117,7 @@ export async function playBattle(
   battleId: number,
   userId: number,
   answers: { questionId: number; answer: string }[],
+  jokerId?: string | null,
 ): Promise<BattlePlayResult | { error: string }> {
   return withTransaction(async (client) => {
     const bRes = await client.query<BattleRow>('SELECT * FROM battles WHERE id = $1 FOR UPDATE', [
@@ -129,6 +132,19 @@ export async function playBattle(
     if (battle.status === 'finished') return { error: 'Bataille déjà terminée.' };
     if (isChallenger && battle.challenger_score != null) return { error: 'Tu as déjà joué.' };
     if (isOpponent && battle.opponent_score != null) return { error: 'Tu as déjà joué.' };
+
+    // Joker « Fourbe » (scope bataille) : engagé au lancement de la manche → la 1re question (slot 0)
+    // comptera double à la résolution. Consommé seulement si réellement en stock.
+    if (jokerId === 'fourbe' && getJoker('fourbe')?.scope === 'battle') {
+      const consumed = await consumeJoker(client, userId, 'fourbe');
+      if (consumed) {
+        await client.query(
+          `INSERT INTO battle_jokers (battle_id, user_id, joker_id, slot) VALUES ($1, $2, 'fourbe', 0)
+           ON CONFLICT (battle_id, user_id, joker_id) DO NOTHING`,
+          [battleId, userId],
+        );
+      }
+    }
 
     const ids = new Set(questionIdsOf(battle));
     const total = ids.size;
@@ -176,19 +192,40 @@ export async function playBattle(
     const op = uRes.rows.find((u) => u.id === battle.opponent_id);
     if (!ch || !op) return { error: 'Joueur introuvable.' };
 
+    // Scores EFFECTIFS (Fourbe : la question du slot compte double si elle est correcte). Les scores
+    // affichés/stockés restent les scores bruts (nb de bonnes réponses) ; seul l'issue + l'ELO en dépendent.
+    const orderedQ = questionIdsOf(battle);
+    const fjRes = await client.query<{ user_id: number; slot: number | null }>(
+      "SELECT user_id, slot FROM battle_jokers WHERE battle_id = $1 AND joker_id = 'fourbe'",
+      [battleId],
+    );
+    const effScore = async (uid: number, raw: number): Promise<number> => {
+      const fj = fjRes.rows.find((r) => r.user_id === uid);
+      if (!fj) return raw;
+      const qid = orderedQ[fj.slot ?? 0];
+      if (qid == null) return raw;
+      const r = await client.query<{ is_correct: boolean }>(
+        'SELECT is_correct FROM battle_answers WHERE battle_id = $1 AND user_id = $2 AND question_id = $3',
+        [battleId, uid, qid],
+      );
+      return effectiveBattleScore(raw, { active: true, slotCorrect: r.rows[0]?.is_correct === true });
+    };
+    const effChallenger = await effScore(battle.challenger_id, challengerScore);
+    const effOpponent = await effScore(battle.opponent_id, opponentScore);
+
     const { deltaA: chDelta, deltaB: opDelta } = battleEloOutcome(
       ch.elo,
       op.elo,
-      challengerScore,
-      opponentScore,
+      effChallenger,
+      effOpponent,
     );
     await client.query('UPDATE users SET elo = elo + $1 WHERE id = $2', [chDelta, battle.challenger_id]);
     await client.query('UPDATE users SET elo = elo + $1 WHERE id = $2', [opDelta, battle.opponent_id]);
 
     const winnerId =
-      challengerScore > opponentScore
+      effChallenger > effOpponent
         ? battle.challenger_id
-        : challengerScore < opponentScore
+        : effChallenger < effOpponent
           ? battle.opponent_id
           : null;
     await client.query(
@@ -202,9 +239,10 @@ export async function playBattle(
     const otherId = isChallenger ? battle.opponent_id : battle.challenger_id;
     const otherDelta = isChallenger ? opDelta : chDelta;
     const resolverName = isChallenger ? ch.username : op.username;
-    const otherScore = isChallenger ? opponentScore : challengerScore;
+    const myEff = isChallenger ? effChallenger : effOpponent;
+    const otherEff = isChallenger ? effOpponent : effChallenger;
     const otherLabel =
-      otherScore > score ? 'Victoire' : otherScore < score ? 'Défaite' : 'Match nul';
+      otherEff > myEff ? 'Victoire' : otherEff < myEff ? 'Défaite' : 'Match nul';
     await client.query(
       "INSERT INTO notifications (user_id, kind, prompt, elo_delta, link) VALUES ($1, 'battle_finished', $2, $3, $4)",
       [otherId, `Bataille vs ${resolverName} terminée — ${otherLabel}`, otherDelta, `/bataille/${battleId}`],
@@ -214,8 +252,9 @@ export async function playBattle(
     const myEloBefore = isChallenger ? ch.elo : op.elo;
     const oppScore = isChallenger ? opponentScore : challengerScore;
     const oppName = isChallenger ? op.username : ch.username;
+    // Issue déterminée sur les scores EFFECTIFS (Fourbe), pas les scores bruts affichés.
     const outcome: 'win' | 'loss' | 'draw' =
-      score > oppScore ? 'win' : score < oppScore ? 'loss' : 'draw';
+      myEff > otherEff ? 'win' : myEff < otherEff ? 'loss' : 'draw';
 
     return {
       score,

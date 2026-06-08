@@ -7,6 +7,8 @@ import { checkAndAwardBadges, recheckPodiumBadges } from '@/lib/badges/engine';
 const schema = z.object({
   questionId: z.number().int().positive(),
   answer: z.string(),
+  jokerId: z.string().optional(),
+  attempt: z.union([z.literal(1), z.literal(2)]).optional(),
 });
 
 export async function POST(req: Request) {
@@ -19,9 +21,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Requête invalide' }, { status: 400 });
   }
 
-  const result = await submitAnswer(user.id, parsed.data.questionId, parsed.data.answer);
+  const result = await submitAnswer(user.id, parsed.data.questionId, parsed.data.answer, {
+    jokerId: parsed.data.jokerId,
+    attempt: parsed.data.attempt,
+  });
   if (!result) {
     return NextResponse.json({ error: 'Question introuvable' }, { status: 404 });
+  }
+
+  // Esquive / 1re passe de Seconde chance : aucune ligne `answers` écrite → pas de badges à évaluer.
+  if (result.skipped || result.retry) {
+    return NextResponse.json({ result, newBadges: [] });
   }
 
   const newBadges = await checkAndAwardBadges(user.id);

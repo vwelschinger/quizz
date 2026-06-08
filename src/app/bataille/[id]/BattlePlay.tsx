@@ -48,10 +48,12 @@ export default function BattlePlay({
   battleId,
   opponentName,
   questions,
+  ownsFourbe = false,
 }: {
   battleId: number;
   opponentName: string;
   questions: PublicQuestion[];
+  ownsFourbe?: boolean;
 }) {
   const [idx, setIdx] = useState(0);
   const [value, setValue] = useState('');
@@ -60,6 +62,7 @@ export default function BattlePlay({
   const [result, setResult] = useState<PlayResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [celebration, setCelebration] = useState<UnlockedBadge[]>([]);
+  const [fourbe, setFourbe] = useState(false); // Fourbe engagé pour cette manche (1re question ×2)
 
   const total = questions.length;
   const q = questions[idx];
@@ -71,7 +74,7 @@ export default function BattlePlay({
       const res = await fetch(`/api/battles/${battleId}/play`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers: all }),
+        body: JSON.stringify({ answers: all, jokerId: fourbe ? 'fourbe' : undefined }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -205,6 +208,19 @@ export default function BattlePlay({
       </div>
       <div className="quiz-q-mark">Q{idx + 1}</div>
       <h2 className="quiz-q-text">{q.prompt}</h2>
+
+      {ownsFourbe && idx === 0 && (
+        <button
+          type="button"
+          onClick={() => setFourbe((f) => !f)}
+          title="Ta 1re question comptera double à la résolution."
+          className={`mt-3 flex items-center gap-2 self-start border-[2px] border-ink px-3 py-2 font-sans text-[12px] font-bold uppercase tracking-[0.04em] shadow-hard ${fourbe ? 'bg-ink text-cream' : 'bg-card text-ink'}`}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/jokers/fourbe.svg" alt="" width={20} height={20} />
+          {fourbe ? 'Fourbe activé — 1re question ×2' : 'Activer Fourbe (1re ×2)'}
+        </button>
+      )}
 
       <div className="min-h-[20px] flex-1" />
 

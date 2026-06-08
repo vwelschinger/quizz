@@ -3,6 +3,7 @@ import { query, queryOne, withTransaction } from './pool';
 import { updatePlayerElo } from '@/lib/quiz/elo';
 import { battleEloOutcome } from '@/lib/quiz/battleElo';
 import { bonusPoints } from '@/lib/quiz/scoring';
+import { postBonus } from '@/lib/jokers/ledger';
 
 interface ContestationRow {
   id: number;
@@ -231,6 +232,10 @@ export async function resolveContestation(
             [correctDelta, a.elo_before + correctDelta, bonus, a.id],
           );
           await client.query('UPDATE users SET elo = elo + $1 WHERE id = $2', [eloDelta, c.user_id]);
+          // Crédit du solde dépensable (ledger) — miroir du bonus désormais inscrit sur la réponse.
+          if (bonus > 0) {
+            await postBonus(client, c.user_id, bonus, 'contestation', { type: 'contestation', id });
+          }
         }
       }
 

@@ -7,8 +7,11 @@ import { countPendingBattlesForUser, getBattleStatsForUser } from '@/lib/db/batt
 import { getUserRank } from '@/lib/db/leaderboard';
 import { countUserBadges } from '@/lib/badges/engine';
 import { BADGE_COUNT } from '@/lib/badges/catalog';
+import { getBonusBalance, getUserJokers } from '@/lib/jokers/ledger';
+import { hasSeenJokersIntro } from '@/lib/db/users';
 import { playerTier } from '@/lib/quiz/tier';
-import EmojiAvatar from './EmojiAvatar';
+import WalletHeader from './WalletHeader';
+import JokersIntro from './JokersIntro';
 import LogoutButton from './LogoutButton';
 import NotificationMenu from './NotificationMenu';
 import { GeoMark } from './GeoMark';
@@ -19,18 +22,33 @@ export default async function DashboardPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
 
-  const [stats, trend, streak, totalQuestions, pendingBattles, rank, battleStats, dailyStreak, badgeCount] =
-    await Promise.all([
-      getUserStats(user.id),
-      getRecentEloTrend(user.id),
-      getCurrentStreak(user.id),
-      countQuestions(),
-      countPendingBattlesForUser(user.id),
-      getUserRank(user.elo),
-      getBattleStatsForUser(user.id),
-      getDailyStreak(user.id),
-      countUserBadges(user.id),
-    ]);
+  const [
+    stats,
+    trend,
+    streak,
+    totalQuestions,
+    pendingBattles,
+    rank,
+    battleStats,
+    dailyStreak,
+    badgeCount,
+    bonusBalance,
+    jokers,
+    seenJokersIntro,
+  ] = await Promise.all([
+    getUserStats(user.id),
+    getRecentEloTrend(user.id),
+    getCurrentStreak(user.id),
+    countQuestions(),
+    countPendingBattlesForUser(user.id),
+    getUserRank(user.elo),
+    getBattleStatsForUser(user.id),
+    getDailyStreak(user.id),
+    countUserBadges(user.id),
+    getBonusBalance(user.id),
+    getUserJokers(user.id),
+    hasSeenJokersIntro(user.id),
+  ]);
   const tier = playerTier(user.elo);
 
   return (
@@ -46,9 +64,11 @@ export default async function DashboardPage() {
         </div>
         <div className="flex items-center gap-2">
           <NotificationMenu />
-          <EmojiAvatar />
+          <WalletHeader balance={bonusBalance} jokers={jokers} />
         </div>
       </header>
+
+      {!seenJokersIntro && <JokersIntro autoOpen />}
 
       {/* ── Bloc ELO héros ── */}
       <section className="relative mb-[18px] overflow-hidden border-[3px] border-ink bg-elo-grad px-5 pb-5 pt-[18px] text-cream shadow-hard-lg">

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth/session';
 import { getBattleView } from '@/lib/db/battles';
+import { getJokerQty } from '@/lib/jokers/ledger';
 import BattlePlay from './BattlePlay';
 import BattleReview from '../BattleReview';
 
@@ -39,8 +40,14 @@ export default async function BattleDetailPage({ params }: { params: Promise<{ i
   }
 
   if (view.state === 'play') {
+    const ownsFourbe = (await getJokerQty(user.id, 'fourbe')) > 0;
     return (
-      <BattlePlay battleId={view.battleId} opponentName={view.opponentName} questions={view.questions} />
+      <BattlePlay
+        battleId={view.battleId}
+        opponentName={view.opponentName}
+        questions={view.questions}
+        ownsFourbe={ownsFourbe}
+      />
     );
   }
 

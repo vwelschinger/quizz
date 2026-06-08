@@ -1,0 +1,12 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <polygon points="451.1,347.0 345.0,453.1 195.0,453.1 88.9,347.0 88.9,197.0 195.0,90.9 345.0,90.9 451.1,197.0" fill="#1A1611"></polygon>
+  <polygon points="437.1,331.0 331.0,437.1 181.0,437.1 74.9,331.0 74.9,181.0 181.0,74.9 331.0,74.9 437.1,181.0" fill="#1A1611"></polygon>
+  <polygon points="422.3,324.9 324.9,422.3 187.1,422.3 89.7,324.9 89.7,187.1 187.1,89.7 324.9,89.7 422.3,187.1" fill="#F2ECDD"></polygon>
+  <polygon points="413.1,321.1 321.1,413.1 190.9,413.1 98.9,321.1 98.9,190.9 190.9,98.9 321.1,98.9 413.1,190.9" fill="#CC2E1E"></polygon>
+  
+  <path d="M158 214 Q256 188 354 214 Q360 270 320 300 Q286 322 256 300 Q226 322 192 300 Q152 270 158 214 Z" fill="#1A1611"></path>
+  <polygon points="196,236 244,230 234,262 200,266" fill="#F2ECDD"></polygon>
+  <polygon points="316,236 268,230 278,262 312,266" fill="#F2ECDD"></polygon>
+  <path d="M158 214 Q150 196 168 184" fill="none" stroke="#1A1611" stroke-width="14" stroke-linecap="round"></path>
+  <path d="M354 214 Q362 196 344 184" fill="none" stroke="#1A1611" stroke-width="14" stroke-linecap="round"></path>
+</svg>

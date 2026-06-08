@@ -6,9 +6,15 @@ import EloFeedback from './EloFeedback';
 import SessionRecap, { type RecapEntry } from './SessionRecap';
 import BadgeCelebration, { type UnlockedBadge } from '../BadgeCelebration';
 import { difficultyRank, questionLabel } from '@/lib/quiz/scoring';
+import { getJoker } from '@/lib/jokers/catalog';
 
 type Category = 'abordable' | 'expert';
 type Difficulty = 'low' | 'middle' | 'high';
+
+interface OwnedJoker {
+  id: string;
+  qty: number;
+}
 
 interface PublicQuestion {
   id: number;
@@ -30,6 +36,8 @@ interface AnswerResult {
   eloDelta: number;
   bonusPoints: number;
   alreadyAnswered: boolean;
+  skipped?: boolean;
+  retry?: boolean;
 }
 
 const SESSION_SIZE = 10;
@@ -56,10 +64,12 @@ export default function QuizRunner({
   theme,
   category,
   difficulty,
+  jokers = [],
 }: {
   theme?: string | null;
   category?: Category | null;
   difficulty?: Difficulty | null;
+  jokers?: OwnedJoker[];
 }) {
   // Libellé + couleur du filtre actif (mode par difficulté).
   const levelActive = !!(category && difficulty);
@@ -75,6 +85,18 @@ export default function QuizRunner({
   const [contest, setContest] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [celebration, setCelebration] = useState<UnlockedBadge[]>([]);
 
+  // Jokers : inventaire local (décrémenté à l'usage), joker armé et état du 2e essai (Seconde chance).
+  const [owned, setOwned] = useState<OwnedJoker[]>(jokers);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(1);
+  const [retry, setRetry] = useState(false);
+
+  function decrementOwned(id: string) {
+    setOwned((prev) =>
+      prev.map((j) => (j.id === id ? { ...j, qty: j.qty - 1 } : j)).filter((j) => j.qty > 0),
+    );
+  }
+
   const loadNext = useCallback(async (count: number) => {
     if (count >= SESSION_SIZE) {
       setPhase('recap');
@@ -84,6 +106,9 @@ export default function QuizRunner({
     setResult(null);
     setValue('');
     setContest('idle');
+    setSelected(null);
+    setAttempt(1);
+    setRetry(false);
     try {
       const qs = new URLSearchParams();
       if (theme) qs.set('theme', theme);
@@ -128,15 +153,20 @@ export default function QuizRunner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
-  // Envoie une réponse (vide = « Je ne sais pas » → comptée comme incorrecte, ELO appliqué).
-  async function submit(answer: string) {
+  // Envoie une réponse au serveur. `jokerJustUsed`/`attemptArg` pilotent l'effet joker côté serveur.
+  async function submit(answer: string, jokerJustUsed: string | null, attemptArg: number) {
     if (!question) return;
     setPhase('loading');
     try {
       const res = await fetch('/api/quiz/answer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ questionId: question.id, answer }),
+        body: JSON.stringify({
+          questionId: question.id,
+          answer,
+          jokerId: jokerJustUsed ?? undefined,
+          attempt: attemptArg,
+        }),
       });
       if (!res.ok) {
         setMessage('Validation impossible.');
@@ -144,7 +174,29 @@ export default function QuizRunner({
         return;
       }
       const data = await res.json();
-      setResult(data.result);
+      const r: AnswerResult = data.result;
+
+      // Esquive : question passée → on recharge une question de remplacement sur le même créneau.
+      if (r.skipped) {
+        decrementOwned('esquive');
+        loadNext(entries.length);
+        return;
+      }
+      // Seconde chance : 1re réponse fausse → 2e essai, sans révéler la bonne réponse.
+      if (r.retry) {
+        decrementOwned('seconde-chance');
+        setRetry(true);
+        setAttempt(2);
+        setValue('');
+        setPhase('question');
+        return;
+      }
+      // Réponse enregistrée : décrémenter le joker effectivement consommé (miroir du serveur).
+      if (jokerJustUsed === 'cafeine' || jokerJustUsed === 'dopage') decrementOwned(jokerJustUsed);
+      else if (jokerJustUsed === 'gilet-pare-balles' && !r.isCorrect)
+        decrementOwned('gilet-pare-balles');
+
+      setResult(r);
       if (Array.isArray(data.newBadges) && data.newBadges.length > 0) {
         setCelebration(data.newBadges);
       }
@@ -157,12 +209,26 @@ export default function QuizRunner({
 
   function validate() {
     if (!value.trim()) return;
-    submit(value);
+    submit(value, selected, attempt);
   }
 
+  // « Je ne sais pas » : réponse vide comptée incorrecte (applique le joker armé le cas échéant).
   function skip() {
     setValue('');
-    submit('');
+    submit('', selected, attempt);
+  }
+
+  // Esquive : action immédiate (passe la question, aucun impact).
+  function useEsquive() {
+    submit('', 'esquive', 1);
+  }
+
+  function toggleJoker(id: string) {
+    if (id === 'esquive') {
+      useEsquive();
+      return;
+    }
+    setSelected((cur) => (cur === id ? null : id));
   }
 
   function next() {
@@ -313,6 +379,34 @@ export default function QuizRunner({
 
       {phase === 'question' && question && (
         <div className="quiz-answer">
+          {owned.length > 0 && !retry && (
+            <div className="flex flex-wrap gap-2">
+              {owned.map((j) => {
+                const def = getJoker(j.id);
+                if (!def) return null;
+                const active = selected === j.id;
+                return (
+                  <button
+                    key={j.id}
+                    type="button"
+                    onClick={() => toggleJoker(j.id)}
+                    title={`${def.name} — ${def.description}`}
+                    className={`flex items-center gap-1 border-[2px] border-ink px-2 py-1 font-sans text-[11px] font-bold uppercase tracking-[0.04em] shadow-hard ${active ? 'bg-ink text-cream' : 'bg-card text-ink'}`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={`/jokers/${j.id}.svg`} alt="" width={18} height={18} />
+                    {def.name}
+                    {j.qty > 1 && <span className="opacity-70">×{j.qty}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {retry && (
+            <div className="border-[2px] border-fail bg-card px-3 py-2 text-[12px] font-bold text-fail">
+              Faux… mais c’est ta seconde chance ! Retente — la bonne réponse reste cachée.
+            </div>
+          )}
           <button type="button" className="quiz-skip" onClick={skip}>
             Je ne sais pas&nbsp;:O
           </button>

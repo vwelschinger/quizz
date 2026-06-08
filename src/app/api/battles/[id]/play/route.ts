@@ -6,6 +6,7 @@ import { checkAndAwardBadges, recheckPodiumBadges } from '@/lib/badges/engine';
 
 const schema = z.object({
   answers: z.array(z.object({ questionId: z.number().int(), answer: z.string() })),
+  jokerId: z.string().optional(),
 });
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -22,7 +23,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const parsed = schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: 'Requête invalide' }, { status: 400 });
 
-  const result = await playBattle(battleId, user.id, parsed.data.answers);
+  const result = await playBattle(battleId, user.id, parsed.data.answers, parsed.data.jokerId);
   if ('error' in result) return NextResponse.json(result, { status: 400 });
   if (result.status === 'finished') {
     const newBadges = await checkAndAwardBadges(user.id);
