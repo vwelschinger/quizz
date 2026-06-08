@@ -23,7 +23,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" className={`${anton.variable} ${archivo.variable}`}>
-      <body className="bg-paper font-sans text-ink antialiased">{children}</body>
+      <body className="bg-paper font-sans text-ink antialiased">
+        {children}
+        <footer className="py-4 text-center text-[11px] font-semibold tracking-[0.04em] text-ink-3">
+          Vickes - Revolution On The Run - 2026
+        </footer>
+      </body>
     </html>
   );
 }
