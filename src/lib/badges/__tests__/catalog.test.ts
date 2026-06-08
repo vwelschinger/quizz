@@ -26,6 +26,7 @@ const ZERO: UserBadgeStats = {
   themeMastered: false,
   nightOwl: false,
   weekendWarrior: false,
+  rank: null,
   themes: [],
 };
 
@@ -81,9 +82,38 @@ describe('catalogue des badges', () => {
       themeMastered: true,
       nightOwl: true,
       weekendWarrior: true,
+      rank: 1, // nº 1 → débloque les 3 badges Podium
       themes: ALL_THEMES_MASTERED,
     };
     // « ça arrive » exige une mauvaise réponse (answered - correct >= 1), absente ici.
     expect(BADGES.filter((b) => !b.test(HIGH)).map((b) => b.id)).toEqual(['ca-arrive']);
+  });
+});
+
+describe('podium', () => {
+  const get = (id: string) => {
+    const b = BADGES.find((x) => x.id === id);
+    if (!b) throw new Error(`badge introuvable: ${id}`);
+    return b;
+  };
+
+  it('rang null (hors classement / admin) → aucun badge podium', () => {
+    expect(get('podium').test({ ...ZERO, rank: null })).toBe(false);
+    expect(get('vice-champion').test({ ...ZERO, rank: null })).toBe(false);
+    expect(get('numero-un').test({ ...ZERO, rank: null })).toBe(false);
+  });
+
+  it('seuils de rang (nichés)', () => {
+    expect(get('podium').test({ ...ZERO, rank: 4 })).toBe(false);
+    expect(get('podium').test({ ...ZERO, rank: 3 })).toBe(true);
+    expect(get('vice-champion').test({ ...ZERO, rank: 3 })).toBe(false);
+    expect(get('vice-champion').test({ ...ZERO, rank: 2 })).toBe(true);
+    expect(get('numero-un').test({ ...ZERO, rank: 2 })).toBe(false);
+    expect(get('numero-un').test({ ...ZERO, rank: 1 })).toBe(true);
+  });
+
+  it('être nº 1 débloque les 3 badges podium', () => {
+    const s = { ...ZERO, rank: 1 };
+    expect([get('podium'), get('vice-champion'), get('numero-un')].every((b) => b.test(s))).toBe(true);
   });
 });

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getCurrentUser } from '@/lib/auth/session';
 import { playBattle, getBattleReview } from '@/lib/db/battles';
-import { checkAndAwardBadges } from '@/lib/badges/engine';
+import { checkAndAwardBadges, recheckPodiumBadges } from '@/lib/badges/engine';
 
 const schema = z.object({
   answers: z.array(z.object({ questionId: z.number().int(), answer: z.string() })),
@@ -26,6 +26,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if ('error' in result) return NextResponse.json(result, { status: 400 });
   if (result.status === 'finished') {
     const newBadges = await checkAndAwardBadges(user.id);
+    // Une bataille résolue change l'ELO des deux joueurs → ré-évaluer les badges Podium du haut du classement.
+    void recheckPodiumBadges();
     const review = await getBattleReview(battleId, user.id);
     return NextResponse.json({
       ...result,

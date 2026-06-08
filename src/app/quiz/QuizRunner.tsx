@@ -128,14 +128,15 @@ export default function QuizRunner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
-  async function validate() {
-    if (!question || !value.trim()) return;
+  // Envoie une réponse (vide = « Je ne sais pas » → comptée comme incorrecte, ELO appliqué).
+  async function submit(answer: string) {
+    if (!question) return;
     setPhase('loading');
     try {
       const res = await fetch('/api/quiz/answer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ questionId: question.id, answer: value }),
+        body: JSON.stringify({ questionId: question.id, answer }),
       });
       if (!res.ok) {
         setMessage('Validation impossible.');
@@ -152,6 +153,16 @@ export default function QuizRunner({
       setMessage('Erreur réseau.');
       setPhase('error');
     }
+  }
+
+  function validate() {
+    if (!value.trim()) return;
+    submit(value);
+  }
+
+  function skip() {
+    setValue('');
+    submit('');
   }
 
   function next() {
@@ -294,12 +305,17 @@ export default function QuizRunner({
         </div>
       )}
 
-      <div className="min-h-[20px] flex-1" />
+      {/* Espace souple : pousse la réponse vers le bas sur grand écran, réduit sur mobile
+          pour que la question reste visible quand le clavier s'ouvre. */}
+      <div className="h-5 shrink-0 sm:min-h-[20px] sm:flex-1" />
 
       {phase === 'loading' && <p className="text-center text-ink-3">…</p>}
 
       {phase === 'question' && question && (
         <div className="quiz-answer">
+          <button type="button" className="quiz-skip" onClick={skip}>
+            Je ne sais pas&nbsp;:O
+          </button>
           <input
             className="quiz-input"
             placeholder="Ta réponse…"

@@ -10,6 +10,7 @@ export const BADGE_FAMILIES = [
   'Précision',
   'Expertise',
   'Rang',
+  'Podium',
   'Bataille',
   'Communauté',
   'Régularité',
@@ -50,6 +51,7 @@ export interface UserBadgeStats {
   themeMastered: boolean; // ≥ 15 bonnes réponses dans un même thème
   nightOwl: boolean; // a répondu entre 00 h et 05 h
   weekendWarrior: boolean; // a répondu un week-end
+  rank: number | null; // rang actuel au classement ELO (1 = premier) ; null si hors classement (admin)
   themes: ThemeStat[]; // récap par thème — alimente les badges de thème
 }
 
@@ -95,6 +97,11 @@ export const BADGES: BadgeDef[] = [
   { id: 'palier-1400', name: 'Maître', family: 'Rang', tier: 'or', description: 'Atteindre 1400 ELO', test: (s) => s.elo >= 1400 },
   { id: 'palier-1600', name: 'Grand maître', family: 'Rang', tier: 'or', description: 'Atteindre 1600 ELO', test: (s) => s.elo >= 1600 },
   { id: 'palier-1800', name: 'Légende', family: 'Rang', tier: 'or', description: 'Atteindre 1800 ELO', test: (s) => s.elo >= 1800 },
+
+  // ── Podium (position au classement ELO, hors admins ; seuils nichés : nº 1 débloque les 3) ──
+  { id: 'podium', name: 'Sur le podium', family: 'Podium', tier: 'bronze', description: 'Entrer dans le top 3 du classement', test: (s) => s.rank !== null && s.rank <= 3 },
+  { id: 'vice-champion', name: 'Vice-champion', family: 'Podium', tier: 'argent', description: 'Atteindre la 2ᵉ place du classement', test: (s) => s.rank !== null && s.rank <= 2 },
+  { id: 'numero-un', name: 'Calife à la place du calife', family: 'Podium', tier: 'or', description: 'Devenir nº 1 du classement', test: (s) => s.rank !== null && s.rank <= 1 },
 
   // ── Bataille ──
   { id: 'premier-sang', name: 'Premier sang', family: 'Bataille', tier: 'bronze', description: 'Jouer 1 bataille', test: (s) => s.battlesPlayed >= 1 },

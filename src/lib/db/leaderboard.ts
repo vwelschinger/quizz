@@ -37,6 +37,29 @@ function boardForRole(role: 'user' | 'admin', limit: number): Promise<Leaderboar
   );
 }
 
+/**
+ * Rang d'un joueur au classement ELO, calculé avec le MÊME tri que `getLeaderboard`
+ * (ELO ↓, nb de réponses ↓, pseudo ↑, comptes admin exclus). Renvoie `null` si le joueur
+ * est hors classement (admin ou introuvable). À utiliser pour les badges « Podium ».
+ */
+export async function getPlayerRank(userId: number): Promise<number | null> {
+  const row = await queryOne<{ rnk: number }>(
+    `SELECT rnk FROM (
+       SELECT u.id,
+              row_number() OVER (
+                ORDER BY u.elo DESC, count(a.id) DESC, u.username ASC
+              ) AS rnk
+       FROM users u
+       LEFT JOIN answers a ON a.user_id = u.id
+       WHERE u.role = 'user'
+       GROUP BY u.id
+     ) ranked
+     WHERE id = $1`,
+    [userId],
+  );
+  return row ? Number(row.rnk) : null;
+}
+
 /** Rang du joueur (par ELO) parmi les joueurs (role user) + total de joueurs. */
 export async function getUserRank(userElo: number): Promise<{ rank: number; total: number }> {
   const row = await queryOne<{ rank: number; total: number }>(

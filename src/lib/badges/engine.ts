@@ -1,5 +1,6 @@
 import { query, queryOne, withTransaction } from '@/lib/db/pool';
 import { getDailyStreak, getThemeBreakdown } from '@/lib/db/answers';
+import { getPlayerRank } from '@/lib/db/leaderboard';
 import { BADGES, type BadgeDef, type UserBadgeStats } from './catalog';
 
 function longestRun<T>(rows: T[], pred: (t: T) => boolean): number {
@@ -33,6 +34,7 @@ export async function getUserBadgeStats(userId: number): Promise<UserBadgeStats>
     battleRows,
     daily,
     themeBreakdown,
+    rank,
   ] = await Promise.all([
     queryOne<{ answered: number; correct: number }>(
       'SELECT count(*)::int AS answered, coalesce(sum((is_correct)::int),0)::int AS correct FROM answers WHERE user_id=$1',
@@ -110,6 +112,7 @@ export async function getUserBadgeStats(userId: number): Promise<UserBadgeStats>
     ),
     getDailyStreak(userId),
     getThemeBreakdown(userId),
+    getPlayerRank(userId),
   ]);
 
   const answered = base?.answered ?? 0;
@@ -140,6 +143,7 @@ export async function getUserBadgeStats(userId: number): Promise<UserBadgeStats>
     themeMastered: theme?.mastered ?? false,
     nightOwl: timeFlags?.night ?? false,
     weekendWarrior: timeFlags?.weekend ?? false,
+    rank,
     themes: themeBreakdown.map((r) => ({
       theme: r.theme,
       answered: Number(r.answered),
@@ -198,5 +202,31 @@ export async function checkAndAwardBadges(userId: number): Promise<BadgeDef[]> {
     return newly;
   } catch {
     return [];
+  }
+}
+
+const PODIUM_RECHECK_LIMIT = 5; // petit tampon au-delà du top 3 (re-check idempotent = gratuit)
+
+/**
+ * Ré-évalue les badges des joueurs actuellement en tête du classement. Capte ceux poussés sur le
+ * podium par l'évolution d'un AUTRE joueur (chute d'un mieux classé, ajustement ELO admin…), sans
+ * qu'ils aient eux-mêmes joué. Idempotent et bon marché (top 5). Best-effort : ne lève jamais.
+ * Tri identique à `getLeaderboard` / `getPlayerRank` (ELO ↓, réponses ↓, pseudo ↑, admins exclus).
+ */
+export async function recheckPodiumBadges(): Promise<void> {
+  try {
+    const rows = await query<{ id: number }>(
+      `SELECT u.id
+       FROM users u
+       LEFT JOIN answers a ON a.user_id = u.id
+       WHERE u.role = 'user'
+       GROUP BY u.id
+       ORDER BY u.elo DESC, count(a.id) DESC, u.username ASC
+       LIMIT $1`,
+      [PODIUM_RECHECK_LIMIT],
+    );
+    await Promise.all(rows.map((r) => checkAndAwardBadges(Number(r.id))));
+  } catch {
+    /* idempotent, best-effort — sera rattrapé à la prochaine action */
   }
 }

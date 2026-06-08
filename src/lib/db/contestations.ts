@@ -166,14 +166,14 @@ export async function resolveContestation(
   id: number,
   accept: boolean,
   adminId: number,
-): Promise<boolean> {
+): Promise<number | null> {
   return withTransaction(async (client) => {
     const cRes = await client.query<ContestationRow>(
       'SELECT * FROM contestations WHERE id = $1 FOR UPDATE',
       [id],
     );
     const c = cRes.rows[0];
-    if (!c || c.status !== 'pending') return false;
+    if (!c || c.status !== 'pending') return null;
 
     const qRes = await client.query<{
       prompt: string;
@@ -250,6 +250,6 @@ export async function resolveContestation(
       'INSERT INTO notifications (user_id, kind, prompt, elo_delta, link) VALUES ($1, $2, $3, $4, $5)',
       [c.user_id, accept ? 'contest_accepted' : 'contest_rejected', prompt, eloDelta, link],
     );
-    return true;
+    return c.user_id;
   });
 }
