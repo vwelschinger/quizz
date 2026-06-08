@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { findUserByUsername } from '@/lib/db/users';
+import { findUserByUsername, recordLogin } from '@/lib/db/users';
 import { verifyPassword } from '@/lib/auth/password';
 import { startSession } from '@/lib/auth/session';
 
@@ -22,6 +22,12 @@ export async function POST(req: Request) {
   }
 
   await startSession(user.id);
+
+  // Suivi des connexions (best-effort, ne bloque pas le login).
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip');
+  const userAgent = req.headers.get('user-agent');
+  void recordLogin(user.id, ip ?? null, userAgent).catch(() => {});
+
   return NextResponse.json({
     user: { id: user.id, username: user.username, role: user.role, elo: user.elo },
   });

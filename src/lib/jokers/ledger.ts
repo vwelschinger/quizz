@@ -14,7 +14,8 @@ export type BonusReason =
   | 'badge_grant' // +Kopecks au déblocage d'un badge
   | 'battle_grant' // +Kopecks à la résolution d'une bataille
   | 'badge_backfill' // rétro-crédit unique des badges déjà débloqués
-  | 'battle_backfill'; // rétro-crédit unique des batailles déjà terminées
+  | 'battle_backfill' // rétro-crédit unique des batailles déjà terminées
+  | 'admin_adjust'; // ajustement manuel du solde par un admin
 
 export interface JokerInventoryRow {
   joker_id: string;

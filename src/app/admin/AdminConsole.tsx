@@ -289,10 +289,15 @@ export default function AdminConsole() {
       <section className="adm-panel adm-panel--flush">
         <div className="adm-panel-head adm-panel-head--pad">
           <span>UTILISATEURS · {users.length}</span>
-          <button className="adm-btn-add" onClick={() => setShowCreate((v) => !v)}>
-            <Plus />
-            AJOUTER
-          </button>
+          <div className="flex items-center gap-3">
+            <Link href="/admin/utilisateurs" className="text-[11px] font-bold uppercase tracking-wide text-ink-3 underline hover:text-cream">
+              ELO · Kopecks · connexions →
+            </Link>
+            <button className="adm-btn-add" onClick={() => setShowCreate((v) => !v)}>
+              <Plus />
+              AJOUTER
+            </button>
+          </div>
         </div>
 
         {showCreate && (

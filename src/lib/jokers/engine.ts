@@ -123,6 +123,15 @@ export async function balleDansLePied(userId: number): Promise<void> {
   });
 }
 
+/** Fixe manuellement le solde de Kopecks d'un joueur (console admin) en postant l'écart au ledger. */
+export async function adminSetKopecks(userId: number, target: number): Promise<void> {
+  await withTransaction(async (client) => {
+    const current = await getBonusBalanceTx(client, userId);
+    const delta = Math.round(target) - current;
+    if (delta !== 0) await postBonus(client, userId, delta, 'admin_adjust', { type: 'admin', id: userId });
+  });
+}
+
 /** Conversion « Recyclage » : sacrifie 1 exemplaire d'un joker possédé contre ⌊prix/3⌋ bonus. */
 export async function recyclage(userId: number, jokerId: string): Promise<void> {
   const def = getJoker(jokerId);
