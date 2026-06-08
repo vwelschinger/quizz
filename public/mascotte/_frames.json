@@ -1,0 +1,64 @@
+{
+  "mascot": "Bob",
+  "fps_default": 12,
+  "states": {
+    "idle": {
+      "frames": 4,
+      "fps": 4,
+      "loop": true
+    },
+    "thinking": {
+      "frames": 4,
+      "fps": 5,
+      "loop": true,
+      "note": "dort — ZZZ"
+    },
+    "correct": {
+      "frames": 6,
+      "fps": 8,
+      "loop": false,
+      "then": "idle",
+      "note": "drapeau + danse"
+    },
+    "wrong": {
+      "frames": 5,
+      "fps": 7,
+      "loop": false,
+      "then": "idle",
+      "note": "2 bras — faucille + marteau"
+    },
+    "badge": {
+      "frames": 6,
+      "fps": 12,
+      "loop": false,
+      "then": "idle",
+      "note": "badge en main"
+    },
+    "bataille": {
+      "frames": 4,
+      "fps": 6,
+      "loop": true,
+      "note": "casque + couteau"
+    },
+    "victoire": {
+      "frames": 6,
+      "fps": 8,
+      "loop": true,
+      "note": "POST-BATAILLE — casque, danse, 2 couteaux"
+    },
+    "defaite": {
+      "frames": 4,
+      "fps": 4,
+      "loop": true,
+      "note": "POST-BATAILLE — casque, mort sur le côté, yeux en croix, langue"
+    },
+    "matchnul": {
+      "frames": 4,
+      "fps": 4,
+      "loop": true,
+      "note": "POST-BATAILLE — casque, blasé"
+    }
+  },
+  "fallback": "bob-static.svg",
+  "path": "public/mascotte/<state>/<state>-NN.svg"
+}

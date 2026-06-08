@@ -1,7 +1,8 @@
 'use client';
 
+// Pilote n'importe quel état déclaré dans MASCOT_FRAMES (les 9 états, dont les nouveaux loop:true).
 import { useEffect, useState } from 'react';
-import { MASCOT_ENABLED, MASCOT_FRAMES, framePath, advance, type MascotState } from '@/lib/mascot/frames';
+import { MASCOT_FRAMES, framePath, advance, type MascotState } from '@/lib/mascot/frames';
 import { onMascot } from '@/lib/mascot/bus';
 
 const STATIC = '/mascotte/bob-static.svg';
@@ -25,7 +26,6 @@ export default function Mascotte({ size = 96, className = '' }: { size?: number;
 
   // 1) Précharge toutes les frames (évite le clignotement au 1er déclenchement).
   useEffect(() => {
-    if (!MASCOT_ENABLED) return;
     (Object.keys(MASCOT_FRAMES) as MascotState[]).forEach((s) => {
       for (let i = 0; i < MASCOT_FRAMES[s].frames; i++) {
         const img = new Image();
@@ -37,9 +37,10 @@ export default function Mascotte({ size = 96, className = '' }: { size?: number;
   // 2) Écoute les évènements du jeu.
   useEffect(() => onMascot(setState), []);
 
-  // 3) Boucle d'animation. Les états non-bouclés retombent sur 'idle' une fois finis.
+  // 3) Boucle d'animation. Les états non-bouclés (correct/wrong/badge) retombent sur 'idle' ;
+  //    les états loop:true (idle/thinking/bataille/victoire/defaite/matchnul) tournent jusqu'au
+  //    prochain mascotReact(...) — cf. DIRECTIVES.md §3 pour le retour à 'idle'.
   useEffect(() => {
-    if (!MASCOT_ENABLED) return;
     if (reduce) {
       setFrame(0);
       return;
@@ -58,9 +59,6 @@ export default function Mascotte({ size = 96, className = '' }: { size?: number;
     return () => window.clearInterval(id);
   }, [state, reduce]);
 
-  // Masqué tant que les assets ne sont pas livrés (flag dans frames.ts).
-  if (!MASCOT_ENABLED) return null;
-
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
@@ -72,7 +70,6 @@ export default function Mascotte({ size = 96, className = '' }: { size?: number;
       draggable={false}
       aria-hidden
       onError={(e) => {
-        // Repli si une frame manque (ex. assets partiellement livrés).
         if (e.currentTarget.src.indexOf(STATIC) === -1) e.currentTarget.src = STATIC;
       }}
     />

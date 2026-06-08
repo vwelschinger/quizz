@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import BattleReview from '../BattleReview';
 import BadgeCelebration, { type UnlockedBadge } from '../../BadgeCelebration';
 import type { BattleQuestionReview } from '@/lib/db/battles';
 import { difficultyRank } from '@/lib/quiz/scoring';
+import Mascotte from '@/components/Mascotte';
+import { mascotReact } from '@/lib/mascot/bus';
 
 interface PublicQuestion {
   id: number;
@@ -67,6 +69,21 @@ export default function BattlePlay({
   const total = questions.length;
   const q = questions[idx];
 
+  // Bob passe en mode « bataille » au lancement du duel ; retour à 'idle' en quittant l'écran (loop:true).
+  useEffect(() => {
+    mascotReact('bataille');
+    return () => mascotReact('idle');
+  }, []);
+
+  // Réaction de Bob au verdict (états post-bataille en boucle jusqu'au démontage).
+  useEffect(() => {
+    if (result?.status === 'finished') {
+      mascotReact(
+        result.outcome === 'win' ? 'victoire' : result.outcome === 'loss' ? 'defaite' : 'matchnul',
+      );
+    }
+  }, [result]);
+
   async function submitAll(all: { questionId: number; answer: string }[]) {
     setSubmitting(true);
     setError(null);
@@ -111,6 +128,9 @@ export default function BattlePlay({
           {celebration.length > 0 && (
             <BadgeCelebration badges={celebration} onClose={() => setCelebration([])} />
           )}
+          <div className="mb-3 flex justify-center">
+            <Mascotte size={104} />
+          </div>
           <div className="card-hard p-6 text-center">
             <div
               className={`font-disp text-[34px] uppercase tracking-disp ${win ? 'text-success' : draw ? 'text-ink' : 'text-fail'}`}
@@ -187,6 +207,9 @@ export default function BattlePlay({
         <Link href="/bataille" className="text-[12px] font-semibold text-ink-2 underline">
           ← Abandonner
         </Link>
+      </div>
+      <div className="mb-1 flex justify-center">
+        <Mascotte size={76} />
       </div>
       <div className="quiz-top">
         <div className="quiz-blocks">

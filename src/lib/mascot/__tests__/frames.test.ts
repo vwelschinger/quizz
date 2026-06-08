@@ -32,6 +32,18 @@ describe('advance', () => {
     }
   });
 
+  it('les états bouclés (dont bataille/victoire/defaite/matchnul) ne signalent jamais done', () => {
+    const looped: MascotState[] = ['idle', 'thinking', 'bataille', 'victoire', 'defaite', 'matchnul'];
+    for (const s of looped) {
+      let f = 0;
+      for (let i = 0; i < MASCOT_FRAMES[s].frames * 2 + 1; i++) {
+        const r = advance(s, f);
+        f = r.frame;
+        expect(r.done).toBe(false);
+      }
+    }
+  });
+
   it('chemin de fichier : NN sur 2 chiffres', () => {
     expect(framePath('badge', 2)).toBe('/mascotte/badge/badge-03.svg');
     expect(framePath('idle', 0)).toBe('/mascotte/idle/idle-01.svg');
