@@ -2,6 +2,13 @@
 // On y branche le scheduler de synchro quotidienne (node-cron).
 export async function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
+
+  // Rétro-crédit unique des Kopecks (badges + batailles déjà acquis). Idempotent, fire-and-forget.
+  void import('@/lib/jokers/backfill')
+    .then(({ backfillKopecksOnce }) => backfillKopecksOnce())
+    .then(() => console.log('[kopecks] backfill rétroactif vérifié.'))
+    .catch((e) => console.error('[kopecks] backfill échec:', e));
+
   if (process.env.SYNC_SCHEDULER_ENABLED === 'false') return;
 
   const globalForCron = globalThis as unknown as { __quizzCronScheduled?: boolean };

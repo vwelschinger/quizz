@@ -37,11 +37,11 @@ interface AnswerResult {
   bonusPoints: number;
   alreadyAnswered: boolean;
   skipped?: boolean;
-  retry?: boolean;
+  offerSecondChance?: boolean;
 }
 
 const SESSION_SIZE = 10;
-type Phase = 'loading' | 'question' | 'feedback' | 'recap' | 'empty' | 'error';
+type Phase = 'loading' | 'question' | 'feedback' | 'recap' | 'empty' | 'error' | 'offer';
 
 function diffClass(q: PublicQuestion): string {
   if (!q.difficulty) return 'diff-badge--lvl0';
@@ -90,6 +90,7 @@ export default function QuizRunner({
   const [selected, setSelected] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(1);
   const [retry, setRetry] = useState(false);
+  const [pendingAnswer, setPendingAnswer] = useState(''); // réponse fausse en attente de décision (offre)
 
   function decrementOwned(id: string) {
     setOwned((prev) =>
@@ -109,6 +110,7 @@ export default function QuizRunner({
     setSelected(null);
     setAttempt(1);
     setRetry(false);
+    setPendingAnswer('');
     try {
       const qs = new URLSearchParams();
       if (theme) qs.set('theme', theme);
@@ -154,7 +156,7 @@ export default function QuizRunner({
   }, [phase]);
 
   // Envoie une réponse au serveur. `jokerJustUsed`/`attemptArg` pilotent l'effet joker côté serveur.
-  async function submit(answer: string, jokerJustUsed: string | null, attemptArg: number) {
+  async function submit(answer: string, jokerJustUsed: string | null, attemptArg: number, decline = false) {
     if (!question) return;
     setPhase('loading');
     try {
@@ -166,6 +168,7 @@ export default function QuizRunner({
           answer,
           jokerId: jokerJustUsed ?? undefined,
           attempt: attemptArg,
+          declineSecondChance: decline || undefined,
         }),
       });
       if (!res.ok) {
@@ -182,19 +185,16 @@ export default function QuizRunner({
         loadNext(entries.length);
         return;
       }
-      // Seconde chance : 1re réponse fausse → 2e essai, sans révéler la bonne réponse.
-      if (r.retry) {
-        decrementOwned('seconde-chance');
-        setRetry(true);
-        setAttempt(2);
-        setValue('');
-        setPhase('question');
+      // Réponse fausse + Seconde chance en stock → on propose au joueur de l'activer (réponse cachée).
+      if (r.offerSecondChance) {
+        setPendingAnswer(answer);
+        setPhase('offer');
         return;
       }
       // Réponse enregistrée : décrémenter le joker effectivement consommé (miroir du serveur).
       if (jokerJustUsed === 'cafeine' || jokerJustUsed === 'dopage') decrementOwned(jokerJustUsed);
-      else if (jokerJustUsed === 'gilet-pare-balles' && !r.isCorrect)
-        decrementOwned('gilet-pare-balles');
+      else if (jokerJustUsed === 'gilet-pare-balles' && !r.isCorrect) decrementOwned('gilet-pare-balles');
+      else if (jokerJustUsed === 'seconde-chance' && attemptArg === 2) decrementOwned('seconde-chance');
 
       setResult(r);
       if (Array.isArray(data.newBadges) && data.newBadges.length > 0) {
@@ -216,6 +216,18 @@ export default function QuizRunner({
   function skip() {
     setValue('');
     submit('', selected, attempt);
+  }
+
+  // Offre de Seconde chance : accepter → 2e essai (réponse cachée) ; refuser → finaliser la réponse fausse.
+  function acceptSecondChance() {
+    setRetry(true);
+    setAttempt(2);
+    setSelected('seconde-chance');
+    setValue('');
+    setPhase('question');
+  }
+  function declineSecondChance() {
+    submit(pendingAnswer, null, 1, true);
   }
 
   // Esquive : action immédiate (passe la question, aucun impact).
@@ -377,11 +389,37 @@ export default function QuizRunner({
 
       {phase === 'loading' && <p className="text-center text-ink-3">…</p>}
 
+      {phase === 'offer' && (
+        <div className="quiz-answer">
+          <div className="border-[3px] border-fail bg-card px-4 py-3 text-center shadow-hard">
+            <div className="font-disp text-[20px] uppercase tracking-disp text-fail">
+              Mauvaise réponse
+            </div>
+            <p className="mt-1 text-[12px] font-semibold text-ink-2">
+              Tu as une <b>Seconde chance</b> en stock. L’activer pour retenter ? La bonne réponse reste
+              cachée. Si tu réussis au 2e essai, ELO et Kopecks comptent à moitié.
+            </p>
+          </div>
+          <button className="cta-primary" onClick={acceptSecondChance}>
+            Oui, je retente
+          </button>
+          <button
+            type="button"
+            onClick={declineSecondChance}
+            className="border-[2px] border-ink bg-card py-2 font-disp text-[14px] uppercase tracking-disp shadow-hard"
+          >
+            Non, valider ma réponse
+          </button>
+        </div>
+      )}
+
       {phase === 'question' && question && (
         <div className="quiz-answer">
-          {owned.length > 0 && !retry && (
+          {owned.some((j) => j.id !== 'seconde-chance') && !retry && (
             <div className="flex flex-wrap gap-2">
-              {owned.map((j) => {
+              {owned
+                .filter((j) => j.id !== 'seconde-chance')
+                .map((j) => {
                 const def = getJoker(j.id);
                 if (!def) return null;
                 const active = selected === j.id;

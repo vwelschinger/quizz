@@ -97,7 +97,7 @@ export default function JokersClient({
           <div className="mt-2 flex items-center justify-between gap-2">
             <span className="font-disp text-[15px] tracking-disp">
               {price.toLocaleString('fr-FR')}
-              <span className="ml-1 text-[10px] font-bold uppercase text-ink-3">bonus</span>
+              <span className="ml-1 text-[10px] font-bold uppercase text-ink-3">Kopecks</span>
               {bought > 0 && <span className="ml-1 text-[10px] font-bold uppercase text-ink-3">(+30%/achat)</span>}
               {qty > 0 && <span className="ml-2 text-[11px] font-bold text-brand-deep">×{qty} en stock</span>}
             </span>
@@ -127,11 +127,37 @@ export default function JokersClient({
           ★
         </span>
         <div>
-          <div className="text-[10px] font-extrabold uppercase tracking-[0.16em]">Points bonus</div>
+          <div className="text-[10px] font-extrabold uppercase tracking-[0.16em]">Kopecks</div>
           <div className="font-disp text-[34px] leading-none tracking-disp">
             {balance.toLocaleString('fr-FR')}
           </div>
         </div>
+      </div>
+
+      {/* Explication du fonctionnement des jokers */}
+      <div className="mb-5 border-[3px] border-ink bg-card p-3 shadow-hard">
+        <h2 className="font-disp text-[15px] uppercase tracking-disp">Comment ça marche</h2>
+        <p className="mt-2 text-[12px] leading-snug text-ink-2">
+          Tes bonnes réponses te rapportent des <b>Kopecks</b>. Dépense-les ici pour acheter des{' '}
+          <b>jokers</b>, garde-les en réserve, puis <b>active-les en pleine partie</b> :
+        </p>
+        <ul className="mt-2 space-y-1 text-[12px] leading-snug text-ink-2">
+          <li>
+            • <b className="text-fail">Offensifs</b> (Caféine, Dopage) : multiplient ta variation d’ELO —
+            gain <i>et</i> perte. À sortir quand tu es sûr de toi.
+          </li>
+          <li>
+            • <b>Défensifs</b> (Gilet, Esquive, Seconde chance) : annulent une perte, passent une question,
+            ou t’offrent un 2e essai si tu te trompes.
+          </li>
+          <li>
+            • <b className="text-brand-deep">Utilitaires</b> (Balle dans le pied, Recyclage) :
+            convertissent ELO ↔ Kopecks, ou recyclent un joker en trop.
+          </li>
+        </ul>
+        <p className="mt-2 text-[11px] font-semibold leading-snug text-ink-3">
+          Un seul joker par question. Le prix d’un joker augmente de 30 % à chacun de tes achats.
+        </p>
       </div>
 
       {error && (
@@ -172,7 +198,7 @@ export default function JokersClient({
             </div>
             <p className="mt-1 text-[11.5px] leading-snug text-ink-2">
               −{JOKER_CONSTANTS.BALLE_ELO_COST} ELO contre +
-              {JOKER_CONSTANTS.BALLE_BONUS_GAIN.toLocaleString('fr-FR')} bonus. Répétable, refusée sous{' '}
+              {JOKER_CONSTANTS.BALLE_BONUS_GAIN.toLocaleString('fr-FR')} Kopecks. Répétable, refusée sous{' '}
               {JOKER_CONSTANTS.BALLE_ELO_FLOOR} ELO.
             </p>
             <div className="mt-2 flex justify-end">
@@ -193,7 +219,7 @@ export default function JokersClient({
           <div className="min-w-0 flex-1">
             <div className="font-disp text-[16px] uppercase leading-none tracking-disp">Recyclage</div>
             <p className="mt-1 text-[11.5px] leading-snug text-ink-2">
-              Transforme un joker possédé en ⅓ de son prix en bonus.
+              Transforme un joker possédé en ⅓ de son prix en Kopecks.
             </p>
             {ownedConsumables.length === 0 ? (
               <p className="mt-2 text-[11px] font-semibold text-ink-3">
@@ -231,7 +257,7 @@ export default function JokersClient({
         </h2>
         {ownedConsumables.length === 0 ? (
           <p className="text-[12px] font-semibold text-ink-3">
-            Tu n’as pas encore de joker. Achète-en avec tes points bonus !
+            Tu n’as pas encore de joker. Achète-en avec tes Kopecks !
           </p>
         ) : (
           <div className="flex flex-wrap gap-2">

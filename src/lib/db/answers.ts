@@ -5,7 +5,12 @@ import { QUIZ_CONFIG } from '@/lib/quiz/config';
 import { bonusPoints } from '@/lib/quiz/scoring';
 import { isAnswerCorrect } from '@/lib/quiz/answer';
 import { getJoker } from '@/lib/jokers/catalog';
-import { consumeJoker, applyJokerToVariation, applyJokerToBonus } from '@/lib/jokers/engine';
+import {
+  consumeJoker,
+  applyJokerToVariation,
+  applyJokerToBonus,
+  secondChanceVariation,
+} from '@/lib/jokers/engine';
 import { postBonus } from '@/lib/jokers/ledger';
 
 export interface AnswerResult {
@@ -19,13 +24,18 @@ export interface AnswerResult {
   alreadyAnswered: boolean;
   /** Esquive : la question a été passée, aucune ligne `answers` écrite. */
   skipped?: boolean;
-  /** Seconde chance : 1re réponse fausse, 2e essai attendu (la bonne réponse n'est PAS révélée). */
-  retry?: boolean;
+  /**
+   * Réponse fausse + le joueur possède « Seconde chance » : on lui propose de l'activer. Rien n'est
+   * écrit, l'ELO n'est pas appliqué et la bonne réponse n'est PAS révélée tant qu'il n'a pas décidé.
+   */
+  offerSecondChance?: boolean;
 }
 
 export interface SubmitAnswerOptions {
   jokerId?: string | null;
   attempt?: number; // 2 = 2e essai de « Seconde chance »
+  /** Le joueur a refusé la Seconde chance proposée → on finalise la réponse fausse normalement. */
+  declineSecondChance?: boolean;
 }
 
 /**
@@ -41,6 +51,7 @@ export async function submitAnswer(
 ): Promise<AnswerResult | null> {
   const rawJoker = opts.jokerId ?? null;
   const attempt = opts.attempt ?? 1;
+  const declineSecondChance = opts.declineSecondChance ?? false;
   return withTransaction(async (client) => {
     const userRes = await client.query<{ elo: number }>(
       'SELECT elo FROM users WHERE id = $1 FOR UPDATE',
@@ -95,7 +106,7 @@ export async function submitAnswer(
 
     const neutral = (extra: Partial<AnswerResult>): AnswerResult => ({
       isCorrect: false,
-      correctAnswer: '', // on ne révèle PAS la réponse (skip / retry)
+      correctAnswer: '', // on ne révèle PAS la réponse (skip / offre de seconde chance)
       explanation: null,
       eloBefore: user.elo,
       eloAfter: user.elo,
@@ -112,22 +123,23 @@ export async function submitAnswer(
       // pas le joker en stock → on retombe sur une réponse normale
     }
 
-    // `activeJoker` = joker dont l'effet s'applique réellement au calcul (après consommation).
-    let activeJoker: string | null = null;
+    // ── Seconde chance RÉACTIVE : réponse fausse, aucun joker armé, le joueur la possède et ne l'a pas
+    //    refusée → on la PROPOSE (rien n'est écrit, ELO non appliqué, bonne réponse non révélée). ──
+    if (!correct && attempt === 1 && !declineSecondChance && (rawJoker === null || rawJoker === 'seconde-chance')) {
+      const r = await client.query<{ qty: number }>(
+        'SELECT qty FROM user_jokers WHERE user_id = $1 AND joker_id = $2',
+        [userId, 'seconde-chance'],
+      );
+      if ((r.rows[0]?.qty ?? 0) > 0) return neutral({ offerSecondChance: true });
+    }
 
-    if (validSolo && rawJoker !== 'esquive') {
-      if (rawJoker === 'seconde-chance') {
-        if (secondTry) {
-          // passe 2 : joker déjà consommé en passe 1, on applique l'effet ½ / plein
-          activeJoker = 'seconde-chance';
-        } else if (!correct) {
-          // passe 1 fausse : ne rien écrire, consommer, demander un 2e essai
-          const consumed = await consumeJoker(client, userId, 'seconde-chance');
-          if (consumed) return neutral({ retry: true });
-          // pas le joker → réponse normale (fausse, perte pleine)
-        }
-        // passe 1 juste : joker rendu (non consommé), effet normal plein → activeJoker reste null
-      } else if (rawJoker === 'gilet-pare-balles') {
+    // `activeJoker` = joker armé dont l'effet s'applique au calcul (après consommation).
+    let activeJoker: string | null = null;
+    // 2e essai de Seconde chance ACCEPTÉ : on consomme le joker maintenant.
+    const secondTryActive = secondTry ? await consumeJoker(client, userId, 'seconde-chance') : false;
+
+    if (!secondTry && validSolo && rawJoker !== 'esquive' && rawJoker !== 'seconde-chance') {
+      if (rawJoker === 'gilet-pare-balles') {
         if (!correct) {
           const consumed = await consumeJoker(client, userId, 'gilet-pare-balles');
           activeJoker = consumed ? 'gilet-pare-balles' : null;
@@ -143,9 +155,9 @@ export async function submitAnswer(
     const rawDelta = QUIZ_CONFIG.kFactor * ((correct ? 1 : 0) - expectedScore(user.elo, question.question_elo));
     let delta: number;
     let bonus: number;
-    if (secondTry) {
+    if (secondTryActive) {
       // 2e essai : gain ×½ si juste, perte pleine si faux ; bonus ×½ si juste.
-      delta = correct ? Math.round(0.5 * rawDelta) : Math.round(rawDelta);
+      delta = secondChanceVariation(rawDelta, correct);
       bonus = applyJokerToBonus(bonusPoints(rate, correct), 'seconde-chance', true);
     } else {
       delta = applyJokerToVariation(rawDelta, activeJoker);

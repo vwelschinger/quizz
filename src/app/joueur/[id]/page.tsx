@@ -118,7 +118,7 @@ export default async function PlayerProfilePage({
           label="Réussite"
         />
         <StatCard value={stats.correct} label="Bonnes" />
-        <StatCard value={stats.bonus} label="Points bonus" />
+        <StatCard value={stats.bonus} label="Kopecks gagnés" />
         <StatCard value={ownedBadges.length} label="Badges" />
       </section>
 

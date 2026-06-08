@@ -3,6 +3,7 @@ import {
   jokerEloMultiplier,
   applyJokerToVariation,
   applyJokerToBonus,
+  secondChanceVariation,
   effectiveBattleScore,
   isJokerUsableInScope,
 } from '../engine';
@@ -49,6 +50,17 @@ describe('applyJokerToBonus', () => {
     expect(applyJokerToBonus(40, 'cafeine', false)).toBe(40);
     expect(applyJokerToBonus(40, 'dopage', true)).toBe(40);
     expect(applyJokerToBonus(40, null, true)).toBe(40);
+  });
+});
+
+describe('secondChanceVariation (2e essai)', () => {
+  it('gain divisé par deux si juste', () => {
+    expect(secondChanceVariation(20, true)).toBe(10);
+    expect(secondChanceVariation(11, true)).toBe(6); // round(5.5)
+  });
+  it('perte pleine si faux', () => {
+    expect(secondChanceVariation(-20, false)).toBe(-20);
+    expect(secondChanceVariation(-13.4, false)).toBe(-13);
   });
 });
 

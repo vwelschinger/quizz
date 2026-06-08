@@ -5,6 +5,8 @@ import { isAnswerCorrect } from '@/lib/quiz/answer';
 import { battleEloOutcome } from '@/lib/quiz/battleElo';
 import { getJoker } from '@/lib/jokers/catalog';
 import { consumeJoker, effectiveBattleScore } from '@/lib/jokers/engine';
+import { postBonus } from '@/lib/jokers/ledger';
+import { BATTLE_KOPECKS } from '@/lib/jokers/rewards';
 
 interface BattleRow {
   id: number;
@@ -234,6 +236,12 @@ export async function playBattle(
        WHERE id = $6`,
       [ch.elo, op.elo, chDelta, opDelta, winnerId, battleId],
     );
+
+    // Récompense en Kopecks selon l'issue, pour chaque joueur (barème batailles).
+    const chKey = winnerId === battle.challenger_id ? 'win' : winnerId === battle.opponent_id ? 'loss' : 'draw';
+    const opKey = winnerId === battle.opponent_id ? 'win' : winnerId === battle.challenger_id ? 'loss' : 'draw';
+    await postBonus(client, battle.challenger_id, BATTLE_KOPECKS[chKey], 'battle_grant', { type: 'battle', id: battleId });
+    await postBonus(client, battle.opponent_id, BATTLE_KOPECKS[opKey], 'battle_grant', { type: 'battle', id: battleId });
 
     // notifier l'AUTRE joueur (celui qui avait joué en premier) que la bataille est terminée
     const otherId = isChallenger ? battle.opponent_id : battle.challenger_id;

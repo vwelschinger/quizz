@@ -9,6 +9,7 @@ const schema = z.object({
   answer: z.string(),
   jokerId: z.string().optional(),
   attempt: z.union([z.literal(1), z.literal(2)]).optional(),
+  declineSecondChance: z.boolean().optional(),
 });
 
 export async function POST(req: Request) {
@@ -24,13 +25,14 @@ export async function POST(req: Request) {
   const result = await submitAnswer(user.id, parsed.data.questionId, parsed.data.answer, {
     jokerId: parsed.data.jokerId,
     attempt: parsed.data.attempt,
+    declineSecondChance: parsed.data.declineSecondChance,
   });
   if (!result) {
     return NextResponse.json({ error: 'Question introuvable' }, { status: 404 });
   }
 
-  // Esquive / 1re passe de Seconde chance : aucune ligne `answers` écrite → pas de badges à évaluer.
-  if (result.skipped || result.retry) {
+  // Esquive / proposition de Seconde chance : aucune ligne `answers` écrite → pas de badges à évaluer.
+  if (result.skipped || result.offerSecondChance) {
     return NextResponse.json({ result, newBadges: [] });
   }
 

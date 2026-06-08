@@ -3,7 +3,7 @@ import type { JokerInventoryRow } from '@/lib/jokers/ledger';
 
 const OCTAGON = 'polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%)';
 
-/** En-tête « portefeuille » du dashboard : solde de bonus dépensable + jokers possédés → /jokers. */
+/** En-tête « portefeuille » du dashboard : solde de Kopecks + jokers possédés → /jokers. */
 export default function WalletHeader({
   balance,
   jokers,
@@ -14,7 +14,7 @@ export default function WalletHeader({
   return (
     <Link
       href="/jokers"
-      title="Tes points bonus et tes jokers"
+      title="Tes Kopecks et tes jokers"
       className="flex items-center gap-2 border-[3px] border-ink bg-card px-[10px] py-[7px] shadow-hard"
     >
       <span

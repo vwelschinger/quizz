@@ -1,6 +1,8 @@
 import { query, queryOne, withTransaction } from '@/lib/db/pool';
 import { getDailyStreak, getThemeBreakdown } from '@/lib/db/answers';
 import { getPlayerRank } from '@/lib/db/leaderboard';
+import { postBonus } from '@/lib/jokers/ledger';
+import { BADGE_KOPECKS } from '@/lib/jokers/rewards';
 import { BADGES, type BadgeDef, type UserBadgeStats } from './catalog';
 
 function longestRun<T>(rows: T[], pred: (t: T) => boolean): number {
@@ -189,14 +191,17 @@ export async function checkAndAwardBadges(userId: number): Promise<BadgeDef[]> {
 
     await withTransaction(async (client) => {
       for (const b of newly) {
-        await client.query(
-          'INSERT INTO user_badges (user_id, badge_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+        const ins = await client.query(
+          'INSERT INTO user_badges (user_id, badge_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING badge_id',
           [userId, b.id],
         );
+        if (ins.rowCount !== 1) continue; // déjà possédé (course) → pas de double crédit
         await client.query(
           "INSERT INTO notifications (user_id, kind, prompt, link) VALUES ($1, 'badge_unlocked', $2, '/badges')",
           [userId, `Badge « ${b.name} » débloqué`],
         );
+        // Récompense en Kopecks selon le palier du badge.
+        await postBonus(client, userId, BADGE_KOPECKS[b.tier], 'badge_grant', { type: 'badge', id: 0 });
       }
     });
     return newly;

@@ -52,9 +52,9 @@ export default function JokersIntro({
             </div>
             <h2 className="font-disp text-[30px] uppercase leading-[0.9] tracking-disp">Les jokers</h2>
             <p className="mt-3 text-[13px] leading-snug text-ink-2">
-              Tes <b>points bonus</b> sont désormais une <b>monnaie</b>. Dépense-les pour acheter des{' '}
-              <b>jokers</b>, garde-les en réserve, puis <b>active-les en partie</b> pour renverser le
-              cours d’une question ou d’un duel.
+              Tes bonnes réponses te rapportent des <b>Kopecks</b>, la monnaie du jeu. Dépense-les pour
+              acheter des <b>jokers</b>, garde-les en réserve, puis <b>active-les en partie</b> pour
+              renverser le cours d’une question ou d’un duel.
             </p>
             <ul className="mt-3 space-y-2 text-[12px] leading-snug">
               <li>
@@ -69,7 +69,7 @@ export default function JokersIntro({
                 <span className="font-bold uppercase tracking-[0.06em] text-brand-deep">
                   Utilitaire
                 </span>{' '}
-                — convertis ELO ↔ bonus, recycle tes jokers en trop.
+                — convertis ELO ↔ Kopecks, recycle tes jokers en trop.
               </li>
             </ul>
             <button onClick={dismiss} className="cta-primary mt-5">

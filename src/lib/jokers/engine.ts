@@ -43,6 +43,14 @@ export function applyJokerToBonus(bonus: number, jokerId: string | null, secondT
   return bonus;
 }
 
+/**
+ * Variation d'ELO au 2e essai de « Seconde chance » : gain ×½ si juste, perte PLEINE si faux.
+ * `rawDelta` = `K·(résultat − attendu)` non arrondi (positif si juste, négatif si faux).
+ */
+export function secondChanceVariation(rawDelta: number, correct: boolean): number {
+  return correct ? Math.round(0.5 * rawDelta) : Math.round(rawDelta);
+}
+
 /** Score effectif d'un joueur en bataille : +1 si Fourbe est actif ET la question doublée est correcte. */
 export function effectiveBattleScore(
   rawScore: number,

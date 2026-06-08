@@ -5,12 +5,16 @@ import { query } from '@/lib/db/pool';
 // À ne pas confondre avec le `totalBonus` historique (SUM(answers.bonus_points), jamais débité).
 
 export type BonusReason =
-  | 'solo_answer' // +bonus d'une bonne réponse solo
-  | 'contestation' // +bonus recrédité par une contestation acceptée
-  | 'migration_backfill' // crédit initial (rétro-crédit)
+  | 'solo_answer' // +Kopecks d'une bonne réponse solo
+  | 'contestation' // +Kopecks recrédités par une contestation acceptée
+  | 'migration_backfill' // crédit initial (rétro-crédit du bonus historique)
   | 'joker_purchase' // −prix d'un achat de joker
-  | 'balle_dans_le_pied' // +bonus issu de la conversion ELO→bonus
-  | 'recyclage'; // +bonus issu du recyclage d'un joker
+  | 'balle_dans_le_pied' // +Kopecks issus de la conversion ELO→Kopecks
+  | 'recyclage' // +Kopecks issus du recyclage d'un joker
+  | 'badge_grant' // +Kopecks au déblocage d'un badge
+  | 'battle_grant' // +Kopecks à la résolution d'une bataille
+  | 'badge_backfill' // rétro-crédit unique des badges déjà débloqués
+  | 'battle_backfill'; // rétro-crédit unique des batailles déjà terminées
 
 export interface JokerInventoryRow {
   joker_id: string;
