@@ -7,6 +7,8 @@ import SessionRecap, { type RecapEntry } from './SessionRecap';
 import BadgeCelebration, { type UnlockedBadge } from '../BadgeCelebration';
 import { difficultyRank, questionLabel } from '@/lib/quiz/scoring';
 import { getJoker } from '@/lib/jokers/catalog';
+import Mascotte from '@/components/Mascotte';
+import { mascotReact } from '@/lib/mascot/bus';
 
 type Category = 'abordable' | 'expert';
 type Difficulty = 'low' | 'middle' | 'high';
@@ -155,6 +157,11 @@ export default function QuizRunner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
+  // Bob « réfléchit » dès qu'une question attend une réponse (y compris 2e essai de Seconde chance).
+  useEffect(() => {
+    if (phase === 'question') mascotReact('thinking');
+  }, [phase]);
+
   // Envoie une réponse au serveur. `jokerJustUsed`/`attemptArg` pilotent l'effet joker côté serveur.
   async function submit(answer: string, jokerJustUsed: string | null, attemptArg: number, decline = false) {
     if (!question) return;
@@ -196,9 +203,12 @@ export default function QuizRunner({
       else if (jokerJustUsed === 'gilet-pare-balles' && !r.isCorrect) decrementOwned('gilet-pare-balles');
       else if (jokerJustUsed === 'seconde-chance' && attemptArg === 2) decrementOwned('seconde-chance');
 
+      mascotReact(r.isCorrect ? 'correct' : 'wrong');
       setResult(r);
       if (Array.isArray(data.newBadges) && data.newBadges.length > 0) {
         setCelebration(data.newBadges);
+        // Laisse jouer la réaction correct/wrong avant l'animation de badge (la plus expressive).
+        setTimeout(() => mascotReact('badge'), 650);
       }
       setPhase('feedback');
     } catch {
@@ -353,6 +363,10 @@ export default function QuizRunner({
         {levelLabel && (
           <span className={`diff-badge ${levelClass}`}>{levelLabel}</span>
         )}
+      </div>
+
+      <div className="mb-1 flex justify-center">
+        <Mascotte size={84} />
       </div>
 
       <div className="quiz-top">

@@ -12,6 +12,7 @@ import { hasSeenJokersIntro } from '@/lib/db/users';
 import { playerTier } from '@/lib/quiz/tier';
 import WalletHeader from './WalletHeader';
 import JokersIntro from './JokersIntro';
+import Mascotte from '@/components/Mascotte';
 import LogoutButton from './LogoutButton';
 import NotificationMenu from './NotificationMenu';
 import { GeoMark } from './GeoMark';
@@ -69,6 +70,10 @@ export default async function DashboardPage() {
       </header>
 
       {!seenJokersIntro && <JokersIntro autoOpen />}
+
+      <div className="mb-4 flex justify-center">
+        <Mascotte size={104} />
+      </div>
 
       {/* ── Bloc ELO héros ── */}
       <section className="relative mb-[18px] overflow-hidden border-[3px] border-ink bg-elo-grad px-5 pb-5 pt-[18px] text-cream shadow-hard-lg">
