@@ -63,10 +63,11 @@ export interface AdminUserRow {
   kopecks: number;
   loginCount: number;
   lastLogin: string | null;
+  lastSeen: string | null;
   createdAt: string;
 }
 
-/** Liste des utilisateurs pour la page d'admin : + solde de Kopecks (ledger) + suivi des connexions. */
+/** Liste des utilisateurs pour la page d'admin : + solde de Kopecks (ledger) + suivi connexions/activité. */
 export async function listUsersDetailed(): Promise<AdminUserRow[]> {
   const rows = await query<{
     id: number;
@@ -76,12 +77,14 @@ export async function listUsersDetailed(): Promise<AdminUserRow[]> {
     kopecks: string;
     login_count: string;
     last_login: Date | null;
+    last_seen_at: Date | null;
     created_at: Date;
   }>(
     `SELECT u.id, u.username, u.role, u.elo,
             COALESCE(bl.kopecks, 0) AS kopecks,
             COALESCE(le.login_count, 0) AS login_count,
             le.last_login,
+            u.last_seen_at,
             u.created_at
        FROM users u
        LEFT JOIN (SELECT user_id, SUM(delta) AS kopecks FROM bonus_ledger GROUP BY user_id) bl
@@ -99,8 +102,23 @@ export async function listUsersDetailed(): Promise<AdminUserRow[]> {
     kopecks: Number(r.kopecks),
     loginCount: Number(r.login_count),
     lastLogin: r.last_login ? r.last_login.toISOString() : null,
+    lastSeen: r.last_seen_at ? r.last_seen_at.toISOString() : null,
     createdAt: r.created_at.toISOString(),
   }));
+}
+
+/** Met à jour « dernière activité » (throttlée à 2 min pour éviter une écriture par requête). */
+export async function touchLastSeen(id: number): Promise<void> {
+  await query(
+    "UPDATE users SET last_seen_at = now() WHERE id = $1 AND (last_seen_at IS NULL OR last_seen_at < now() - interval '2 minutes')",
+    [id],
+  );
+}
+
+/** Nombre total de connexions enregistrées. */
+export async function countLoginEvents(): Promise<number> {
+  const row = await queryOne<{ n: number }>('SELECT count(*)::int AS n FROM login_events');
+  return row?.n ?? 0;
 }
 
 /** Enregistre une connexion (appelé après une authentification réussie). Best-effort. */

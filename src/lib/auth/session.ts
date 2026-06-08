@@ -5,6 +5,7 @@ import {
   getSessionUser,
   type SessionUser,
 } from '@/lib/db/sessions';
+import { touchLastSeen } from '@/lib/db/users';
 
 const COOKIE_NAME = 'quizz_session';
 
@@ -31,7 +32,10 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   const store = await cookies();
   const token = store.get(COOKIE_NAME)?.value;
   if (!token) return null;
-  return getSessionUser(token);
+  const user = await getSessionUser(token);
+  // « Dernière activité » : rafraîchie dès qu'un joueur fait une action (throttlée, best-effort).
+  if (user) void touchLastSeen(user.id).catch(() => {});
+  return user;
 }
 
 export type { SessionUser };

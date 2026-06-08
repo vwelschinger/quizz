@@ -85,3 +85,42 @@ export async function getJokerQty(userId: number, jokerId: string): Promise<numb
   );
   return rows[0]?.qty ?? 0;
 }
+
+export interface JokerPurchaseRow {
+  id: number;
+  username: string;
+  jokerId: string;
+  price: number;
+  createdAt: string;
+}
+
+/** Journal des achats de jokers (récents d'abord) pour la console admin. */
+export async function listRecentJokerPurchases(limit = 50): Promise<JokerPurchaseRow[]> {
+  const rows = await query<{
+    id: number;
+    username: string;
+    joker_id: string;
+    price: number;
+    created_at: Date;
+  }>(
+    `SELECT jp.id, u.username, jp.joker_id, jp.price, jp.created_at
+       FROM joker_purchases jp
+       JOIN users u ON u.id = jp.user_id
+      ORDER BY jp.created_at DESC
+      LIMIT $1`,
+    [limit],
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    username: r.username,
+    jokerId: r.joker_id,
+    price: r.price,
+    createdAt: r.created_at.toISOString(),
+  }));
+}
+
+/** Nombre total d'achats de jokers enregistrés. */
+export async function countJokerPurchases(): Promise<number> {
+  const rows = await query<{ n: number }>('SELECT count(*)::int AS n FROM joker_purchases');
+  return rows[0]?.n ?? 0;
+}

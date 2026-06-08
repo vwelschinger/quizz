@@ -92,6 +92,11 @@ export async function purchaseJoker(userId: number, jokerId: string): Promise<vo
        DO UPDATE SET qty = user_jokers.qty + 1, purchased = user_jokers.purchased + 1`,
       [userId, jokerId],
     );
+    // Journal d'achat (console admin) : qui / quel joker / prix payé.
+    await client.query(
+      'INSERT INTO joker_purchases (user_id, joker_id, price) VALUES ($1, $2, $3)',
+      [userId, jokerId, price],
+    );
   });
 }
 
