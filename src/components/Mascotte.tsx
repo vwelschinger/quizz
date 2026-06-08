@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MASCOT_FRAMES, framePath, advance, type MascotState } from '@/lib/mascot/frames';
+import { MASCOT_ENABLED, MASCOT_FRAMES, framePath, advance, type MascotState } from '@/lib/mascot/frames';
 import { onMascot } from '@/lib/mascot/bus';
 
 const STATIC = '/mascotte/bob-static.svg';
@@ -25,6 +25,7 @@ export default function Mascotte({ size = 96, className = '' }: { size?: number;
 
   // 1) Précharge toutes les frames (évite le clignotement au 1er déclenchement).
   useEffect(() => {
+    if (!MASCOT_ENABLED) return;
     (Object.keys(MASCOT_FRAMES) as MascotState[]).forEach((s) => {
       for (let i = 0; i < MASCOT_FRAMES[s].frames; i++) {
         const img = new Image();
@@ -38,6 +39,7 @@ export default function Mascotte({ size = 96, className = '' }: { size?: number;
 
   // 3) Boucle d'animation. Les états non-bouclés retombent sur 'idle' une fois finis.
   useEffect(() => {
+    if (!MASCOT_ENABLED) return;
     if (reduce) {
       setFrame(0);
       return;
@@ -55,6 +57,9 @@ export default function Mascotte({ size = 96, className = '' }: { size?: number;
     }, 1000 / MASCOT_FRAMES[state].fps);
     return () => window.clearInterval(id);
   }, [state, reduce]);
+
+  // Masqué tant que les assets ne sont pas livrés (flag dans frames.ts).
+  if (!MASCOT_ENABLED) return null;
 
   return (
     // eslint-disable-next-line @next/next/no-img-element

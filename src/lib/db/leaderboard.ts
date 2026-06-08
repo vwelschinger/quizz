@@ -19,6 +19,36 @@ export function getAdminBoard(limit = 100): Promise<LeaderboardEntry[]> {
   return boardForRole('admin', limit);
 }
 
+export interface ThemeLeaderboardEntry {
+  id: number;
+  username: string;
+  answered: number; // dans le thème
+  correct: number; // bonnes réponses dans le thème
+  successRate: number; // %
+}
+
+/**
+ * Classement d'un thème : joueurs (role user) qui ont répondu dans ce thème, triés par nombre de
+ * bonnes réponses dans le thème ↓, puis taux de réussite ↓, puis pseudo. Admins exclus.
+ */
+export function getThemeLeaderboard(theme: string, limit = 100): Promise<ThemeLeaderboardEntry[]> {
+  return query<ThemeLeaderboardEntry>(
+    `SELECT u.id,
+            u.username,
+            count(a.id)::int AS answered,
+            coalesce(sum((a.is_correct)::int), 0)::int AS correct,
+            coalesce(round(avg(CASE WHEN a.is_correct THEN 100.0 ELSE 0 END)), 0)::int AS "successRate"
+     FROM users u
+     JOIN answers a ON a.user_id = u.id
+     JOIN questions q ON q.id = a.question_id
+     WHERE u.role = 'user' AND q.theme = $1
+     GROUP BY u.id
+     ORDER BY correct DESC, "successRate" DESC, u.username ASC
+     LIMIT $2`,
+    [theme, limit],
+  );
+}
+
 function boardForRole(role: 'user' | 'admin', limit: number): Promise<LeaderboardEntry[]> {
   return query<LeaderboardEntry>(
     `SELECT u.id,

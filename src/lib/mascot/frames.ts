@@ -1,6 +1,9 @@
 // Manifeste des animations de Bob le ragondin. Les clés d'état et le nombre de frames sont un
 // CONTRAT GELÉ partagé avec SPEC_DESIGN_MASCOTTE.md (noms de dossiers/fichiers identiques).
 
+// Passe à `true` une fois les frames SVG livrées dans public/mascotte/ (évite les images cassées en prod).
+export const MASCOT_ENABLED: boolean = false;
+
 export type MascotState = 'idle' | 'thinking' | 'correct' | 'wrong' | 'badge';
 
 export interface FrameSpec {

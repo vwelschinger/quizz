@@ -62,12 +62,25 @@ export default async function LeaderboardPage() {
         </Link>
       </div>
 
-      <header className="mb-5">
+      <header className="mb-4">
         <div className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-brand-deep">
           Communauté
         </div>
         <h1 className="font-disp text-[40px] uppercase leading-[0.9] tracking-disp">Classement</h1>
       </header>
+
+      <Link
+        href="/classement/themes"
+        className="mb-5 flex h-[46px] items-center justify-center gap-2 border-[3px] border-ink bg-card font-disp text-[14px] uppercase tracking-disp shadow-hard"
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
+        </svg>
+        Classement par thème
+      </Link>
 
       <div className="flex flex-col gap-[10px]">
         {rows.map((r, i) => (
